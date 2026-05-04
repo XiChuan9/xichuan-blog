@@ -85,6 +85,15 @@ function getImageTransform(searchParams: URLSearchParams) {
   }
 }
 
+function hardenAssetResponseHeaders(headers: Headers) {
+  headers.set('X-Content-Type-Options', 'nosniff')
+
+  const contentType = headers.get('content-type') || ''
+  if (contentType.toLowerCase().startsWith('image/svg+xml')) {
+    headers.set('Content-Security-Policy', "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox")
+  }
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ key: string[] }> }
@@ -135,6 +144,7 @@ export async function GET(
           const headers = new Headers(transformed.headers)
           headers.set('cache-control', 'public, max-age=31536000, immutable')
           headers.set('Accept-Ranges', 'bytes')
+          hardenAssetResponseHeaders(headers)
 
           return new Response(transformed.body, {
             status: transformed.status,
@@ -178,6 +188,7 @@ export async function GET(
       headers.set('Content-Length', String(length))
       headers.set('Accept-Ranges', 'bytes')
       headers.set('cache-control', 'public, max-age=31536000, immutable')
+      hardenAssetResponseHeaders(headers)
 
       return new Response(object.body, { status: 206, headers })
     }
@@ -198,6 +209,7 @@ export async function GET(
   if (object.size) {
     headers.set('Content-Length', String(object.size))
   }
+  hardenAssetResponseHeaders(headers)
 
   return new Response(object.body, { headers })
 }

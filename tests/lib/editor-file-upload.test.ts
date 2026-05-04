@@ -220,12 +220,21 @@ describe('editor-file-upload helpers', () => {
     })
     expect(setAudio).toHaveBeenCalledWith({ src: '/uploads/voice.mp3' })
 
-    insertUploadedFileIntoEditor(editor, createFile('book.epub', 'application/epub+zip'), {
+    insertUploadedFileIntoEditor(editor, createFile('<img onerror=alert(1)>book.epub', 'application/epub+zip'), {
       url: '/uploads/book.epub',
       type: 'application/epub+zip',
       name: 'book.epub',
     })
-    expect(insertContent).toHaveBeenCalledWith('<p><a href="/uploads/book.epub" target="_blank" rel="noopener">📎 book.epub</a></p>')
+    expect(insertContent).toHaveBeenCalledWith({
+      type: 'paragraph',
+      content: [
+        {
+          type: 'text',
+          text: '📎 <img onerror=alert(1)>book.epub',
+          marks: undefined,
+        },
+      ],
+    })
   })
 
   it('inserts generated images at a given position and appends a trailing paragraph', () => {

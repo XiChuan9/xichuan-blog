@@ -31,13 +31,14 @@ function FeatureBadge({ enabled }: { enabled: boolean }) {
 }
 
 export function RuntimeCapabilitiesPanel({ capabilities }: { capabilities: RuntimeCapabilities }) {
+  const isVercel = capabilities.platform === 'vercel'
   const bindingItems = [
-    { key: 'd1', label: 'D1', active: capabilities.bindings.d1 },
-    { key: 'cache', label: 'KV Cache', active: capabilities.bindings.cache },
-    { key: 'images', label: 'R2 Images', active: capabilities.bindings.images },
-    { key: 'queue', label: 'Queues', active: capabilities.bindings.queue },
-    { key: 'workersAI', label: 'Workers AI', active: capabilities.bindings.workersAI },
-    { key: 'vectorize', label: 'Vectorize', active: capabilities.bindings.vectorize },
+    { key: 'd1', label: isVercel ? 'Turso DB' : 'D1', active: capabilities.bindings.d1 },
+    { key: 'cache', label: isVercel ? 'Cache Adapter' : 'KV Cache', active: capabilities.bindings.cache },
+    { key: 'images', label: isVercel ? 'Vercel Blob' : 'R2 Images', active: capabilities.bindings.images },
+    { key: 'queue', label: isVercel ? 'Async Fallback' : 'Queues', active: capabilities.bindings.queue },
+    { key: 'workersAI', label: isVercel ? 'Workers AI REST' : 'Workers AI', active: capabilities.bindings.workersAI },
+    { key: 'vectorize', label: isVercel ? 'Vector Adapter' : 'Vectorize', active: capabilities.bindings.vectorize },
   ]
 
   const featureItems = [
@@ -102,7 +103,7 @@ export function RuntimeCapabilitiesPanel({ capabilities }: { capabilities: Runti
       </div>
 
       <div className="rounded-lg border border-dashed border-[var(--editor-line)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--editor-muted)]">
-        开源部署建议：默认只要求 `D1 + R2` 即可运行，`Queues / Workers AI / Vectorize` 都应作为可选增强，通过环境变量显式开启。
+        开源部署建议：Cloudflare 默认只要求 `D1 + R2`，Vercel 默认只要求 `Turso + Blob`；异步任务、AI 与向量检索都作为可选增强，通过环境变量显式开启。
       </div>
     </div>
   )

@@ -16,6 +16,7 @@ type ImageBucket = {
     }
   ) => Promise<void>
   get: (key: string) => Promise<{ customMetadata?: Record<string, string> } | null>
+  head?: (key: string) => Promise<unknown | null>
 }
 
 type RuntimeEnv = {
@@ -25,8 +26,10 @@ type RuntimeEnv = {
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB (Cloudflare Workers limit)
 
+const BLOCKED_TYPES = new Set(['image/svg+xml'])
+
 const ALLOWED_TYPES: Record<string, string[]> = {
-  image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/avif'],
+  image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/heic', 'image/heif'],
   audio: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/flac', 'audio/mp4'],
   video: ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'],
   document: [
@@ -59,6 +62,14 @@ function sanitizeFilename(filename: string) {
   const trimmed = filename.trim().toLowerCase()
   const safe = trimmed.replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-')
   return safe || 'file'
+}
+
+function isBlockedUploadType(mimeType: string) {
+  return BLOCKED_TYPES.has(mimeType.trim().toLowerCase())
+}
+
+function isBlockedUploadExtension(extension: string) {
+  return extension.trim().toLowerCase() === 'svg'
 }
 
 function buildAssetUrls(encodedKey: string, cloudflareEnabled: boolean) {
@@ -105,6 +116,9 @@ export async function POST(req: NextRequest) {
     // Check allowed file types (allow unknown types with common extensions)
     const ext = file.name.split('.').pop()?.toLowerCase() || ''
     const knownExts = ['zip', 'rar', '7z', 'epub', 'mobi', 'azw', 'azw3', 'pdf', 'txt', 'mp3', 'mp4', 'wav', 'ogg', 'webm', 'mov', 'flac', 'aac']
+    if (isBlockedUploadType(file.type) || isBlockedUploadExtension(ext)) {
+      return NextResponse.json({ error: '不支持的文件类型' }, { status: 400 })
+    }
     if (!ALL_ALLOWED.includes(file.type) && !file.type.startsWith('image/') && !knownExts.includes(ext)) {
       return NextResponse.json({ error: `不支持的文件类型: ${file.type}` }, { status: 400 })
     }
@@ -130,7 +144,9 @@ export async function POST(req: NextRequest) {
       const fileHash = await calculateHash(file)
       const dedupKey = `${category}/${yyyy}/${mm}/${fileHash}-${sanitizeFilename(file.name)}`
 
-      const existing = await env.IMAGES.get(dedupKey)
+      const existing = env.IMAGES.head
+        ? await env.IMAGES.head(dedupKey)
+        : await env.IMAGES.get(dedupKey)
       if (existing) {
         const encodedKey = dedupKey.split('/').map(encodeURIComponent).join('/')
         const variants = category === 'image' ? buildAssetUrls(encodedKey, cloudflareImagePipeline) : undefined
@@ -197,7 +213,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Upload error:', error)
     return NextResponse.json(
-      { error: '文件上传失败: ' + (error as Error).message },
+      { error: '文件上传失败，请稍后重试' },
       { status: 500 }
     )
   }

@@ -20,6 +20,9 @@ npm run test:run
 if [[ "${MODE}" == "full" ]]; then
   echo "==> npx @opennextjs/cloudflare@latest build"
   npx @opennextjs/cloudflare@latest build
+elif [[ "${MODE}" == "vercel" ]]; then
+  echo "==> npm run build:vercel"
+  npm run build:vercel
 else
   echo "==> npm run build"
   npm run build

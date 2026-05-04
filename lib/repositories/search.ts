@@ -1,5 +1,5 @@
 import { mapPostWithTags } from '@/lib/repositories/post-mappers'
-import type { Database } from '@/lib/repositories/schema'
+import { ensureSchema, type Database } from '@/lib/repositories/schema'
 import type { Post, PostWithTags } from '@/lib/repositories/types'
 
 // 全文搜索（FTS5，回退 LIKE）
@@ -12,6 +12,7 @@ export async function searchPosts(
   includeHidden = false,
   includeDeleted = false,
 ): Promise<PostWithTags[]> {
+  await ensureSchema(db)
   let results: Post[]
 
   const conditions: string[] = []
@@ -35,11 +36,12 @@ export async function searchPosts(
       .all<Post>()
     results = ftsResult.results
   } catch {
-    const pattern = `%${query}%`
+    const escapedQuery = query.replace(/[\\%_]/g, (match) => `\\${match}`)
+    const pattern = `%${escapedQuery}%`
     const likeResult = await db
       .prepare(
         `SELECT * FROM posts
-         WHERE (title LIKE ? OR content LIKE ?)
+         WHERE (title LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\')
          ${whereClause}
          ORDER BY published_at DESC
          LIMIT ?`,

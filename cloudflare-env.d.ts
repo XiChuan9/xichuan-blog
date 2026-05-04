@@ -23,6 +23,7 @@ declare interface KVNamespace {
 declare interface R2ObjectBody {
   body: ReadableStream | null
   httpEtag: string
+  size?: number
   writeHttpMetadata(headers: Headers): void
 }
 
@@ -35,9 +36,11 @@ declare interface R2Bucket {
         contentType?: string
         cacheControl?: string
       }
+      customMetadata?: Record<string, string>
     }
   ): Promise<void>
-  get(key: string): Promise<R2ObjectBody | null>
+  get(key: string, options?: { range?: { offset: number; length: number } }): Promise<R2ObjectBody | null>
+  head?(key: string): Promise<{ size: number; httpMetadata?: { contentType?: string } } | null>
 }
 
 declare interface QueueBinding {
@@ -77,4 +80,6 @@ declare interface CloudflareEnv {
   ENABLE_WORKERS_AI?: string
   ENABLE_VECTOR_SEARCH?: string
   ENABLE_CF_IMAGE_PIPELINE?: string
+  ENABLE_PUBLIC_CACHE_IN_DEV?: string
+  RUNTIME_TARGET?: 'cloudflare' | 'vercel'
 }
