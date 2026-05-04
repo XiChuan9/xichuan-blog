@@ -28,24 +28,6 @@ const BASE_SCHEMA_STATEMENTS = [
   'CREATE INDEX IF NOT EXISTS idx_posts_slug ON posts(slug)',
   'CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category)',
   'CREATE INDEX IF NOT EXISTS idx_posts_published ON posts(published_at DESC)',
-  `CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts USING fts5(
-    title,
-    content,
-    content=posts,
-    content_rowid=id,
-    tokenize='unicode61'
-  )`,
-  `CREATE TRIGGER IF NOT EXISTS posts_ai AFTER INSERT ON posts BEGIN
-    INSERT INTO posts_fts(rowid, title, content)
-    VALUES (new.id, new.title, new.content);
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS posts_au AFTER UPDATE ON posts BEGIN
-    UPDATE posts_fts SET title = new.title, content = new.content
-    WHERE rowid = new.id;
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS posts_ad AFTER DELETE ON posts BEGIN
-    DELETE FROM posts_fts WHERE rowid = old.id;
-  END`,
   `CREATE TABLE IF NOT EXISTS categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
@@ -71,6 +53,69 @@ const BASE_SCHEMA_STATEMENTS = [
 // Cloudflare 生产仍建议走 wrangler d1 migrations；Vercel/Turso 可在首次请求自举。
 let schemaInitialized = false
 
+const POSTS_FTS_SCHEMA = `CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts USING fts5(
+  title,
+  content,
+  content=posts,
+  content_rowid=id,
+  tokenize='unicode61'
+)`
+
+const POSTS_FTS_TRIGGERS = [
+  `CREATE TRIGGER posts_ai AFTER INSERT ON posts BEGIN
+    INSERT INTO posts_fts(rowid, title, content)
+    VALUES (new.id, new.title, new.content);
+  END`,
+  `CREATE TRIGGER posts_au AFTER UPDATE ON posts BEGIN
+    INSERT INTO posts_fts(posts_fts, rowid, title, content)
+    VALUES ('delete', old.id, old.title, old.content);
+    INSERT INTO posts_fts(rowid, title, content)
+    VALUES (new.id, new.title, new.content);
+  END`,
+  `CREATE TRIGGER posts_ad AFTER DELETE ON posts BEGIN
+    INSERT INTO posts_fts(posts_fts, rowid, title, content)
+    VALUES ('delete', old.id, old.title, old.content);
+  END`,
+]
+
+async function rebuildPostsFtsIndex(db: Database) {
+  try {
+    await db.prepare("INSERT INTO posts_fts(posts_fts) VALUES ('rebuild')").run()
+  } catch (error) {
+    console.warn('FTS rebuild failed, recreating posts_fts:', error)
+    await db.prepare('DROP TABLE IF EXISTS posts_fts').run()
+    await db.prepare(POSTS_FTS_SCHEMA).run()
+    await db.prepare("INSERT INTO posts_fts(posts_fts) VALUES ('rebuild')").run()
+  }
+}
+
+async function dropPostsFtsTriggers(db: Database) {
+  for (const trigger of ['posts_ai', 'posts_au', 'posts_ad']) {
+    await db.prepare(`DROP TRIGGER IF EXISTS ${trigger}`).run()
+  }
+}
+
+async function ensurePostsFtsIndex(db: Database) {
+  try {
+    await db.prepare(POSTS_FTS_SCHEMA).run()
+
+    await dropPostsFtsTriggers(db)
+    for (const triggerSql of POSTS_FTS_TRIGGERS) {
+      await db.prepare(triggerSql).run()
+    }
+
+    await rebuildPostsFtsIndex(db)
+  } catch (error) {
+    // FTS is an optional acceleration path. Search falls back to LIKE if unavailable.
+    console.warn('Posts FTS setup failed:', error)
+    try {
+      await dropPostsFtsTriggers(db)
+    } catch {
+      // Ignore cleanup failure; the original FTS setup error is already logged.
+    }
+  }
+}
+
 export async function ensureSchema(db: Database) {
   if (schemaInitialized) return
 
@@ -95,11 +140,7 @@ export async function ensureSchema(db: Database) {
       }
     }
 
-    try {
-      await db.prepare("INSERT INTO posts_fts(posts_fts) VALUES ('rebuild')").run()
-    } catch {
-      // FTS rebuild is best-effort because some SQLite-compatible runtimes disable FTS5.
-    }
+    await ensurePostsFtsIndex(db)
 
     schemaInitialized = true
   } catch (error: unknown) {
