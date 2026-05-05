@@ -9,6 +9,7 @@ import {
   normalizeBaseUrl,
   resolveAiConfigSecret,
 } from '@/lib/ai-provider-profiles'
+import { normalizeSafeProviderBaseUrl } from '@/lib/server/url-security'
 
 function isGeminiBaseUrl(baseUrl: string): boolean {
   return /generativelanguage\.googleapis\.com/i.test(baseUrl)
@@ -137,7 +138,8 @@ export async function POST(req: NextRequest) {
     }>()
   }
 
-  const normalizedBaseUrl = normalizeBaseUrl(body.base_url || selectedProfile?.base_url || '')
+  const baseUrlResult = normalizeSafeProviderBaseUrl(body.base_url || selectedProfile?.base_url || '')
+  const normalizedBaseUrl = baseUrlResult.ok ? normalizeBaseUrl(baseUrlResult.url) : ''
   const normalizedModel = (body.model || selectedProfile?.model || '').trim()
   const temperature = clampTemperature(Number(body.temperature))
   const maxTokens = Math.max(1, Math.min(256, Math.floor(clampMaxTokens(Number(body.max_tokens)))))
@@ -155,6 +157,10 @@ export async function POST(req: NextRequest) {
       success: false,
       error: '已保存 API Key 无法解密，请重新输入 API Key，或检查 AI_CONFIG_ENCRYPTION_SECRET / ADMIN_TOKEN_SALT 是否与保存时一致',
     })
+  }
+
+  if (!baseUrlResult.ok) {
+    return NextResponse.json({ error: baseUrlResult.error }, { status: 400 })
   }
 
   if (!normalizedBaseUrl || !key || !normalizedModel) {

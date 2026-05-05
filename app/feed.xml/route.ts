@@ -1,5 +1,6 @@
 import { getAppCloudflareEnv } from '@/lib/cloudflare'
 import { getSiteUrl } from '@/lib/site-config'
+import { sanitizeArticleHtml } from '@/lib/html-sanitize'
 
 const SITE_URL = getSiteUrl()
 const SITE_TITLE = '乔木博客'
@@ -53,7 +54,7 @@ export async function GET() {
       <link>${SITE_URL}/${p.slug}</link>
       <guid isPermaLink="true">${SITE_URL}/${p.slug}</guid>
       <description>${escapeXml(p.description || '')}</description>
-      <content:encoded><![CDATA[${p.html || ''}]]></content:encoded>
+      <content:encoded><![CDATA[${sanitizeArticleHtml(p.html || '')}]]></content:encoded>
       <category>${escapeXml(p.category || '未分类')}</category>
       <pubDate>${pubDate}</pubDate>
     </item>`

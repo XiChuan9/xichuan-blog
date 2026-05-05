@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { isAdminAuthenticated, COOKIE_NAME } from '@/lib/admin-auth'
+import { getAppCloudflareEnv } from '@/lib/cloudflare'
 import Link from 'next/link'
 import { LogoutButton } from './LogoutButton'
 import { PenLine, ExternalLink } from 'lucide-react'
@@ -13,8 +14,9 @@ export default async function AdminProtectedLayout({
 }) {
   const cookieStore = await cookies()
   const token = cookieStore.get(COOKIE_NAME)?.value
+  const env = await getAppCloudflareEnv().catch(() => null)
 
-  if (!(await isAdminAuthenticated(token))) {
+  if (!(await isAdminAuthenticated(token, env?.DB))) {
     redirect('/admin/login')
   }
 

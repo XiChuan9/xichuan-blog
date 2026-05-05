@@ -86,7 +86,7 @@ export function PasswordModal({
   }
 
   const fullUrl = password
-    ? `${articleUrl}?pwd=${encodeURIComponent(password)}`
+    ? articleUrl
     : articleUrl
 
   return (

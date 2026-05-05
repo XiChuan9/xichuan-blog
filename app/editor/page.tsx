@@ -13,7 +13,8 @@ export default async function EditorPage({
   // 鉴权：只有登录的管理员才能访问编辑器
   const cookieStore = await cookies()
   const cookieValue = cookieStore.get(COOKIE_NAME)?.value
-  const isAuthenticated = await isAdminAuthenticated(cookieValue)
+  const env = await getAppCloudflareEnv().catch(() => null)
+  const isAuthenticated = await isAdminAuthenticated(cookieValue, env?.DB)
 
   if (!isAuthenticated) {
     const params = await searchParams
@@ -40,7 +41,6 @@ export default async function EditorPage({
   } | undefined
 
   if (edit) {
-    const env = await getAppCloudflareEnv()
     if (env?.DB) {
       const post = await getPostBySlug(env.DB, edit)
       if (post) {

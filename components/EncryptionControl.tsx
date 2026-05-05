@@ -48,7 +48,7 @@ export function EncryptionControl({ initialPassword, onChange, articleUrl }: Enc
   }
 
   const fullUrl = articleUrl && password
-    ? `${articleUrl}?pwd=${encodeURIComponent(password)}`
+    ? articleUrl
     : articleUrl || ''
 
   return (

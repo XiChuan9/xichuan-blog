@@ -47,7 +47,9 @@ export function createVercelBlobBucket(env: NodeJS.ProcessEnv = process.env): R2
         headers: range ? { Range: range } : undefined,
       })
 
-      if (!result || result.statusCode !== 200) return null
+      if (!result) return null
+      const statusCode = Number(result.statusCode)
+      if (statusCode !== 200 && statusCode !== 206) return null
       const blob = result.blob
 
       return {
@@ -58,6 +60,11 @@ export function createVercelBlobBucket(env: NodeJS.ProcessEnv = process.env): R2
           if (blob.contentType) headers.set('Content-Type', blob.contentType)
           if (blob.contentDisposition) headers.set('Content-Disposition', blob.contentDisposition)
           if (blob.cacheControl) headers.set('Cache-Control', blob.cacheControl)
+          const responseHeaders = (result as { response?: { headers?: Headers } }).response?.headers
+          const contentRange = responseHeaders?.get('content-range')
+          const contentLength = responseHeaders?.get('content-length')
+          if (contentRange) headers.set('Content-Range', contentRange)
+          if (contentLength) headers.set('Content-Length', contentLength)
         },
       }
     },

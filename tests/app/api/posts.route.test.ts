@@ -99,6 +99,26 @@ describe('/api/posts route', () => {
     )
   })
 
+  it('sanitizes supplied article HTML before creating a post', async () => {
+    mocks.parseJsonBody.mockResolvedValue({
+      title: '安全文章',
+      content: '正文内容',
+      html: '<h2 onclick="alert(1)">标题</h2><img src="/api/images/image/a.webp" onerror="alert(1)"><a href="javascript:alert(1)">bad</a><script>alert(1)</script>',
+    })
+    mocks.createPost.mockResolvedValue(7)
+
+    const response = await POST({} as never)
+
+    expect(response.status).toBe(200)
+    const saved = mocks.createPost.mock.calls[0][1]
+    expect(saved.html).toContain('<h2>标题</h2>')
+    expect(saved.html).toContain('src="/api/images/image/a.webp"')
+    expect(saved.html).not.toContain('onclick')
+    expect(saved.html).not.toContain('onerror')
+    expect(saved.html).not.toContain('javascript:')
+    expect(saved.html).not.toContain('<script')
+  })
+
   it('patches a post with fallback description and normalized next slug', async () => {
     mocks.parseJsonBody.mockResolvedValue({
       current_slug: 'old-slug',
@@ -126,5 +146,21 @@ describe('/api/posts route', () => {
       }),
     )
     expect(body).toEqual({ success: true, slug: 'new_slug' })
+  })
+
+  it('sanitizes supplied article HTML before patching a post', async () => {
+    mocks.parseJsonBody.mockResolvedValue({
+      current_slug: 'old-slug',
+      html: '<p onclick="alert(1)">正文</p><iframe src="https://evil.example/embed"></iframe><script>alert(1)</script>',
+    })
+
+    const response = await PATCH({} as never)
+
+    expect(response.status).toBe(200)
+    const updates = mocks.updatePostBySlug.mock.calls[0][2]
+    expect(updates.html).toContain('<p>正文</p>')
+    expect(updates.html).not.toContain('onclick')
+    expect(updates.html).not.toContain('evil.example')
+    expect(updates.html).not.toContain('<script')
   })
 })

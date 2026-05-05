@@ -3,6 +3,7 @@ import { authenticateRequest } from '@/lib/admin-auth'
 import { getAppCloudflareEnv } from '@/lib/cloudflare'
 import { generateEditorImage } from '@/lib/ai-image'
 import { ensureAiImageConfigInfrastructure } from '@/lib/ai-image-config'
+import { normalizeSafeRemoteFetchUrl } from '@/lib/server/url-security'
 
 type ImageBucket = {
   put: (
@@ -60,15 +61,19 @@ export async function POST(req: NextRequest) {
 
   try {
     const normalizedReferenceImageUrl = typeof body.referenceImageUrl === 'string' && body.referenceImageUrl.trim()
-      ? new URL(body.referenceImageUrl.trim(), req.nextUrl.origin).toString()
+      ? normalizeSafeRemoteFetchUrl(body.referenceImageUrl.trim(), req.nextUrl.origin)
       : undefined
+
+    if (normalizedReferenceImageUrl && !normalizedReferenceImageUrl.ok) {
+      return NextResponse.json({ error: normalizedReferenceImageUrl.error }, { status: 400 })
+    }
 
     const result = await generateEditorImage({
       action,
       userPrompt: body.prompt,
       articleTitle: body.articleTitle,
       contextText: body.contextText,
-      referenceImageUrl: normalizedReferenceImageUrl,
+      referenceImageUrl: normalizedReferenceImageUrl?.url,
       aspectRatio: body.aspectRatio,
       resolution: body.resolution,
       profileId: body.profileId,

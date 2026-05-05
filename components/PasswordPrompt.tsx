@@ -3,18 +3,39 @@
 import { useState } from 'react'
 
 interface PasswordPromptProps {
+  slug: string
   error?: string
 }
 
-export function PasswordPrompt({ error }: PasswordPromptProps) {
+export function PasswordPrompt({ slug, error }: PasswordPromptProps) {
   const [password, setPassword] = useState('')
+  const [message, setMessage] = useState(error || '')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (password.trim()) {
-      const url = new URL(window.location.href)
-      url.searchParams.set('pwd', password.trim())
-      window.location.href = url.toString()
+    const trimmed = password.trim()
+    if (!trimmed || loading) return
+
+    setLoading(true)
+    setMessage('')
+    try {
+      const response = await fetch(`/api/posts/${encodeURIComponent(slug)}/unlock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: trimmed }),
+      })
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({})) as { error?: string }
+        setMessage(body.error || '密码错误，请重试')
+        setPassword('')
+        return
+      }
+      window.location.href = window.location.pathname
+    } catch {
+      setMessage('网络错误，请重试')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -47,17 +68,17 @@ export function PasswordPrompt({ error }: PasswordPromptProps) {
                 autoFocus
                 className="w-full px-4 py-3 rounded-lg border border-[var(--editor-line)] bg-[var(--background)] text-[var(--editor-ink)] placeholder:text-[var(--editor-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--editor-accent)] focus:border-transparent transition"
               />
-              {error && (
-                <p className="mt-2 text-sm text-rose-600">{error}</p>
+              {message && (
+                <p className="mt-2 text-sm text-rose-600">{message}</p>
               )}
             </div>
 
             <button
               type="submit"
-              disabled={!password.trim()}
+              disabled={!password.trim() || loading}
               className="w-full px-4 py-3 rounded-lg bg-[var(--editor-accent)] text-white font-medium hover:brightness-105 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              解锁文章
+              {loading ? '验证中...' : '解锁文章'}
             </button>
           </form>
         </div>

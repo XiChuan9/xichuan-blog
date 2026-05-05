@@ -14,6 +14,7 @@ import {
   fetchWorkersAiModels,
   type RawWorkersAiModelItem,
 } from '@/lib/workers-ai-models'
+import { normalizeSafeProviderBaseUrl } from '@/lib/server/url-security'
 
 type RawModelItem = RawWorkersAiModelItem
 
@@ -97,7 +98,14 @@ function filterCompatibleModels(items: RawModelItem[], provider: string, baseUrl
   return filtered.length > 0 ? filtered : items
 }
 
-export async function GET(req: NextRequest) {
+type ModelsRequestInput = {
+  provider?: string
+  base_url?: string
+  api_key?: string
+  profile_id?: number | string
+}
+
+async function handleModelsRequest(req: NextRequest, input: ModelsRequestInput) {
   const env = await getAppCloudflareEnv()
   const db = env?.DB as D1Database | undefined
   if (!(await authenticateRequest(req, db))) {
@@ -108,11 +116,10 @@ export async function GET(req: NextRequest) {
   const secret = resolveAiConfigSecret(env as Record<string, unknown>)
   await ensureAiConfigInfrastructure(db, secret)
 
-  const requestUrl = new URL(req.url)
-  const queryProvider = requestUrl.searchParams.get('provider')?.trim() || ''
-  const queryBaseUrl = requestUrl.searchParams.get('base_url')?.trim() || ''
-  const queryApiKey = requestUrl.searchParams.get('api_key')?.trim() || ''
-  const queryProfileId = Number(requestUrl.searchParams.get('profile_id') || '')
+  const queryProvider = input.provider?.trim() || ''
+  const queryBaseUrl = input.base_url?.trim() || ''
+  const queryApiKey = input.api_key?.trim() || ''
+  const queryProfileId = Number(input.profile_id || '')
 
   let selectedProfile: {
     id: number
@@ -139,7 +146,9 @@ export async function GET(req: NextRequest) {
   const fallbackPreset = AI_PROVIDER_MAP[provider]
   const fallbackModels = fallbackPreset?.quickModels || []
 
-  const baseUrl = normalizeBaseUrl(queryBaseUrl || selectedProfile?.base_url || '')
+  const requestedBaseUrl = queryBaseUrl || selectedProfile?.base_url || ''
+  const baseUrlResult = requestedBaseUrl ? normalizeSafeProviderBaseUrl(requestedBaseUrl) : { ok: false as const, error: '缺少 base_url 参数' }
+  const baseUrl = baseUrlResult.ok ? normalizeBaseUrl(baseUrlResult.url) : ''
   const profileApiKey = selectedProfile?.api_key_encrypted
     ? await decryptApiKey(selectedProfile.api_key_encrypted, secret)
     : ''
@@ -148,7 +157,7 @@ export async function GET(req: NextRequest) {
     && Boolean(selectedProfile?.api_key_encrypted?.trim())
     && !profileApiKey
 
-  if (!baseUrl) return NextResponse.json({ error: '缺少 base_url 参数' }, { status: 400 })
+  if (!baseUrlResult.ok) return NextResponse.json({ error: baseUrlResult.error }, { status: 400 })
 
   if (!apiKey && provider !== 'openrouter') {
     const warning = storedKeyUnavailable
@@ -255,4 +264,26 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ error: message }, { status: 502 })
   }
+}
+
+export async function GET(req: NextRequest) {
+  const requestUrl = new URL(req.url)
+  if (requestUrl.searchParams.has('api_key')) {
+    return NextResponse.json({ error: 'API Key 不允许放在 URL 中，请使用 POST 请求' }, { status: 400 })
+  }
+  return handleModelsRequest(req, {
+    provider: requestUrl.searchParams.get('provider') || '',
+    base_url: requestUrl.searchParams.get('base_url') || '',
+    profile_id: requestUrl.searchParams.get('profile_id') || '',
+  })
+}
+
+export async function POST(req: NextRequest) {
+  let body: ModelsRequestInput
+  try {
+    body = await req.json() as ModelsRequestInput
+  } catch {
+    return NextResponse.json({ error: '请求体不是有效 JSON' }, { status: 400 })
+  }
+  return handleModelsRequest(req, body)
 }

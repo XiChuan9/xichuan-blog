@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   getPostBySlug: vi.fn(),
   updatePost: vi.fn(),
   deletePost: vi.fn(),
-  isAdminAuthenticated: vi.fn(),
+  authenticateCookieRequest: vi.fn(),
   invalidatePublicContentCache: vi.fn(),
   enqueueBackgroundJob: vi.fn(),
   getRouteContextWithDb: vi.fn(),
@@ -18,8 +18,7 @@ vi.mock('@/lib/db', () => ({
 }))
 
 vi.mock('@/lib/admin-auth', () => ({
-  COOKIE_NAME: 'qmblog_admin',
-  isAdminAuthenticated: mocks.isAdminAuthenticated,
+  authenticateCookieRequest: mocks.authenticateCookieRequest,
 }))
 
 vi.mock('@/lib/cache', () => ({
@@ -42,7 +41,7 @@ import { PUT } from '@/app/api/admin/posts/[slug]/route'
 describe('/api/admin/posts/[slug] route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.isAdminAuthenticated.mockResolvedValue(true)
+    mocks.authenticateCookieRequest.mockResolvedValue(true)
     mocks.getRouteContextWithDb.mockResolvedValue({
       ok: true,
       env: { CACHE: {} },
@@ -89,5 +88,27 @@ describe('/api/admin/posts/[slug] route', () => {
     )
     expect(mocks.enqueueBackgroundJob).toHaveBeenCalledTimes(1)
     expect(body).toEqual({ success: true, slug: 'next_slug' })
+  })
+
+  it('sanitizes stored article HTML on admin updates', async () => {
+    mocks.parseJsonBody.mockResolvedValue({
+      slug: 'old-slug',
+      title: '文章标题',
+      content: '更新后的正文',
+      html: '<p onclick="alert(1)">正文</p><img src="/api/images/image/a.webp" onerror="alert(1)"><script>alert(1)</script>',
+      description: '摘要',
+    })
+
+    const response = await PUT({ method: 'PUT', headers: new Headers() } as never, {
+      params: Promise.resolve({ slug: 'old-slug' }),
+    })
+
+    expect(response.status).toBe(200)
+    const saved = mocks.updatePost.mock.calls[0][2]
+    expect(saved.html).toContain('<p>正文</p>')
+    expect(saved.html).toContain('src="/api/images/image/a.webp"')
+    expect(saved.html).not.toContain('onclick')
+    expect(saved.html).not.toContain('onerror')
+    expect(saved.html).not.toContain('<script')
   })
 })

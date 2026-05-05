@@ -9,6 +9,7 @@ import {
   AI_IMAGE_PROVIDER_MAP,
 } from '@/lib/ai-image-provider-presets'
 import { normalizeBaseUrl, resolveAiConfigSecret } from '@/lib/ai-provider-profiles'
+import { normalizeSafeProviderBaseUrl } from '@/lib/server/url-security'
 
 type RawModelItem =
   | string
@@ -77,7 +78,14 @@ function buildModels(items: RawModelItem[]) {
     .map((id) => ({ id, name: id }))
 }
 
-export async function GET(req: NextRequest) {
+type ModelsRequestInput = {
+  provider?: string
+  base_url?: string
+  api_key?: string
+  profile_id?: number | string
+}
+
+async function handleModelsRequest(req: NextRequest, input: ModelsRequestInput) {
   const env = await getAppCloudflareEnv()
   const db = env?.DB as D1Database | undefined
   if (!(await authenticateRequest(req, db))) {
@@ -87,11 +95,10 @@ export async function GET(req: NextRequest) {
 
   await ensureAiImageConfigInfrastructure(db)
 
-  const requestUrl = new URL(req.url)
-  const queryProvider = requestUrl.searchParams.get('provider')?.trim() || ''
-  const queryBaseUrl = requestUrl.searchParams.get('base_url')?.trim() || ''
-  const queryApiKey = requestUrl.searchParams.get('api_key')?.trim() || ''
-  const queryProfileId = Number(requestUrl.searchParams.get('profile_id') || '')
+  const queryProvider = input.provider?.trim() || ''
+  const queryBaseUrl = input.base_url?.trim() || ''
+  const queryApiKey = input.api_key?.trim() || ''
+  const queryProfileId = Number(input.profile_id || '')
 
   const secret = resolveAiConfigSecret(env as Record<string, unknown>)
   const rawSelectedProfile = Number.isFinite(queryProfileId) && queryProfileId > 0
@@ -114,14 +121,18 @@ export async function GET(req: NextRequest) {
   const provider = queryProvider || selectedProfile?.provider || rawSelectedProfile?.provider || 'custom'
   const fallbackPreset = AI_IMAGE_PROVIDER_MAP[provider]
   const fallbackModels = fallbackPreset?.quickModels || []
-  const baseUrl = normalizeBaseUrl(queryBaseUrl || selectedProfile?.base_url || rawSelectedProfile?.base_url || '')
+  const requestedBaseUrl = queryBaseUrl || selectedProfile?.base_url || rawSelectedProfile?.base_url || ''
+  const baseUrlResult = requestedBaseUrl
+    ? normalizeSafeProviderBaseUrl(requestedBaseUrl)
+    : { ok: false as const, error: '缺少 base_url 参数' }
+  const baseUrl = baseUrlResult.ok ? normalizeBaseUrl(baseUrlResult.url) : ''
   const apiKey = queryApiKey || selectedProfile?.api_key || ''
   const storedKeyUnavailable = !queryApiKey
     && Boolean(rawSelectedProfile?.api_key_encrypted?.trim())
     && !selectedProfile?.api_key
 
-  if (!baseUrl) {
-    return NextResponse.json({ error: '缺少 base_url 参数' }, { status: 400 })
+  if (!baseUrlResult.ok) {
+    return NextResponse.json({ error: baseUrlResult.error }, { status: 400 })
   }
 
   if (!apiKey) {
@@ -182,4 +193,26 @@ export async function GET(req: NextRequest) {
     }
     return NextResponse.json({ error: message }, { status: 502 })
   }
+}
+
+export async function GET(req: NextRequest) {
+  const requestUrl = new URL(req.url)
+  if (requestUrl.searchParams.has('api_key')) {
+    return NextResponse.json({ error: 'API Key 不允许放在 URL 中，请使用 POST 请求' }, { status: 400 })
+  }
+  return handleModelsRequest(req, {
+    provider: requestUrl.searchParams.get('provider') || '',
+    base_url: requestUrl.searchParams.get('base_url') || '',
+    profile_id: requestUrl.searchParams.get('profile_id') || '',
+  })
+}
+
+export async function POST(req: NextRequest) {
+  let body: ModelsRequestInput
+  try {
+    body = await req.json() as ModelsRequestInput
+  } catch {
+    return NextResponse.json({ error: '请求体不是有效 JSON' }, { status: 400 })
+  }
+  return handleModelsRequest(req, body)
 }

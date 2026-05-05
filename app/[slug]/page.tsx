@@ -1,7 +1,9 @@
 import { getPostBySlug, incrementViewCount, isPubliclyAccessiblePost, isSearchIndexablePost } from '@/lib/db'
 import { getAppCloudflareEnv } from '@/lib/cloudflare'
-import { verifyPassword } from '@/lib/password'
+import { getPostAccessCookieName, verifyPostAccessToken } from '@/lib/password'
+import { sanitizeArticleHtml } from '@/lib/html-sanitize'
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
@@ -78,13 +80,10 @@ export async function generateMetadata({
 
 export default async function PostPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ pwd?: string }>
 }) {
   const { slug } = await params
-  const { pwd } = await searchParams
 
   let env: Awaited<ReturnType<typeof getAppCloudflareEnv>> | undefined
   try {
@@ -104,43 +103,14 @@ export default async function PostPage({
   const activeCategorySlug = headerData.categories.find((category) => category.name === post.category)?.slug ?? null
 
   // 密码保护逻辑保持公开路径纯粹，由前台管理员增强层在客户端接管编辑能力
-  let passwordError: string | undefined
   const needsPassword = Boolean(post.password)
 
   if (needsPassword) {
-    if (!pwd) {
-      return (
-        <div className="min-h-screen bg-[var(--background)] flex flex-col">
-          <SiteHeader
-            initialTheme={headerData.defaultTheme}
-            navLinks={headerData.navLinks}
-            categories={headerData.categories}
-            activeCategorySlug={activeCategorySlug}
-            stickyOnMobile={false}
-          />
-          <main className="page-main mx-auto w-full max-w-3xl px-4 sm:px-6 flex-1 py-8 sm:py-12">
-            <FrontPostAdminBoundary
-              slug={post.slug}
-              title={post.title}
-              html={post.html}
-              category={post.category}
-              coverImage={post.cover_image}
-              password={post.password}
-              publishedAt={post.published_at}
-              viewCount={post.view_count}
-              content={post.content}
-            >
-              <PasswordPrompt />
-            </FrontPostAdminBoundary>
-          </main>
-          <SiteFooter />
-        </div>
-      )
-    }
+    const cookieStore = await cookies()
+    const accessToken = cookieStore.get(getPostAccessCookieName(post.slug))?.value
+    const hasAccess = await verifyPostAccessToken(post.slug, post.password!, accessToken)
 
-    const isValid = await verifyPassword(pwd, post.password!)
-    if (!isValid) {
-      passwordError = '密码错误，请重试'
+    if (!hasAccess) {
       return (
         <div className="min-h-screen bg-[var(--background)] flex flex-col">
           <SiteHeader
@@ -151,19 +121,7 @@ export default async function PostPage({
             stickyOnMobile={false}
           />
           <main className="page-main mx-auto w-full max-w-3xl px-4 sm:px-6 flex-1 py-8 sm:py-12">
-            <FrontPostAdminBoundary
-              slug={post.slug}
-              title={post.title}
-              html={post.html}
-              category={post.category}
-              coverImage={post.cover_image}
-              password={post.password}
-              publishedAt={post.published_at}
-              viewCount={post.view_count}
-              content={post.content}
-            >
-              <PasswordPrompt error={passwordError} />
-            </FrontPostAdminBoundary>
+            <PasswordPrompt slug={post.slug} />
           </main>
           <SiteFooter />
         </div>
@@ -182,6 +140,7 @@ export default async function PostPage({
     ? await getRelatedPosts(db, env, post, 3).catch(() => ({ strategy: 'fts' as const, source: 'rules' as const, results: [] }))
     : { strategy: 'fts' as const, source: 'rules' as const, results: [] }
   const contentContainerId = `post-content-${post.slug}`
+  const safeHtml = sanitizeArticleHtml(post.html)
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
@@ -231,10 +190,10 @@ export default async function PostPage({
         <FrontPostAdminBoundary
           slug={post.slug}
           title={post.title}
-          html={post.html}
+          html={safeHtml}
           category={post.category}
           coverImage={post.cover_image}
-          password={post.password}
+          protectedPost={Boolean(post.password)}
           publishedAt={post.published_at}
           viewCount={post.view_count}
           content={post.content}
@@ -276,7 +235,7 @@ export default async function PostPage({
                 <span>{post.view_count} 次阅读</span>
                 <span aria-hidden>·</span>
                 <span>约 {readingMinutes} 分钟</span>
-                <DownloadMarkdown title={post.title} html={post.html} />
+                <DownloadMarkdown title={post.title} html={safeHtml} />
               </div>
             </header>
 
@@ -284,9 +243,9 @@ export default async function PostPage({
               id={contentContainerId}
               data-admin-edit-trigger
               className="rich-content"
-              dangerouslySetInnerHTML={{ __html: post.html }}
+              dangerouslySetInnerHTML={{ __html: safeHtml }}
             />
-            <TwitterEmbedsEnhancer containerId={contentContainerId} html={post.html} />
+            <TwitterEmbedsEnhancer containerId={contentContainerId} html={safeHtml} />
 
             {related.results.length > 0 && (
               <section className="mt-14 sm:mt-16 border-t border-[var(--editor-line)] pt-8 sm:pt-10">

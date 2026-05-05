@@ -3,10 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   getSetting: vi.fn(),
   setSetting: vi.fn(),
-  isAdminAuthenticated: vi.fn(),
+  authenticateCookieRequest: vi.fn(),
   getRouteEnvWithDb: vi.fn(),
   parseJsonBody: vi.fn(),
-  cookies: vi.fn(),
 }))
 
 vi.mock('@/lib/db', () => ({
@@ -15,8 +14,7 @@ vi.mock('@/lib/db', () => ({
 }))
 
 vi.mock('@/lib/admin-auth', () => ({
-  COOKIE_NAME: 'qmblog_admin',
-  isAdminAuthenticated: mocks.isAdminAuthenticated,
+  authenticateCookieRequest: mocks.authenticateCookieRequest,
 }))
 
 vi.mock('@/lib/server/route-helpers', () => ({
@@ -26,19 +24,12 @@ vi.mock('@/lib/server/route-helpers', () => ({
   parseJsonBody: mocks.parseJsonBody,
 }))
 
-vi.mock('next/headers', () => ({
-  cookies: mocks.cookies,
-}))
-
 import { GET, POST } from '@/app/api/admin/settings/route'
 
 describe('/api/admin/settings route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.cookies.mockResolvedValue({
-      get: vi.fn(() => ({ value: 'admin-token' })),
-    })
-    mocks.isAdminAuthenticated.mockResolvedValue(true)
+    mocks.authenticateCookieRequest.mockResolvedValue(true)
     mocks.getRouteEnvWithDb.mockResolvedValue({
       ok: true,
       db: { kind: 'db' },
@@ -49,20 +40,26 @@ describe('/api/admin/settings route', () => {
   it('returns a setting value for an authorized GET request', async () => {
     mocks.getSetting.mockResolvedValue('serif')
 
-    const response = await GET({
+    const request = {
       nextUrl: new URL('http://test.local/api/admin/settings?key=font_mode'),
-    } as never)
+      method: 'GET',
+      headers: new Headers(),
+    } as never
+    const response = await GET(request)
     const body = await response.json()
 
+    expect(mocks.authenticateCookieRequest).toHaveBeenCalledWith(request, { kind: 'db' })
     expect(mocks.getSetting).toHaveBeenCalledWith({ kind: 'db' }, 'font_mode')
     expect(body).toEqual({ key: 'font_mode', value: 'serif' })
   })
 
   it('rejects unauthorized requests before reading from the database', async () => {
-    mocks.isAdminAuthenticated.mockResolvedValue(false)
+    mocks.authenticateCookieRequest.mockResolvedValue(false)
 
     const response = await GET({
       nextUrl: new URL('http://test.local/api/admin/settings?key=font_mode'),
+      method: 'GET',
+      headers: new Headers(),
     } as never)
 
     expect(response.status).toBe(401)
@@ -75,10 +72,15 @@ describe('/api/admin/settings route', () => {
       key: 'appearance',
       value: { theme: 'paper', density: 'comfortable' },
     })
+    const request = {
+      method: 'POST',
+      headers: new Headers({ Origin: 'http://test.local' }),
+    } as never
 
-    const response = await POST({} as never)
+    const response = await POST(request)
     const body = await response.json()
 
+    expect(mocks.authenticateCookieRequest).toHaveBeenCalledWith(request, { kind: 'db' })
     expect(mocks.setSetting).toHaveBeenCalledWith(
       { kind: 'db' },
       'appearance',

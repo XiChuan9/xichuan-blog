@@ -10,7 +10,7 @@ interface FrontPostAdminBoundaryProps {
   html: string
   category?: string | null
   coverImage?: string | null
-  password?: string | null
+  protectedPost?: boolean
   publishedAt?: number
   viewCount?: number
   content?: string
@@ -23,7 +23,7 @@ export function FrontPostAdminBoundary({
   html,
   category,
   coverImage,
-  password,
+  protectedPost,
   publishedAt,
   viewCount,
   content,
@@ -57,7 +57,7 @@ export function FrontPostAdminBoundary({
           html={html}
           category={category}
           coverImage={coverImage}
-          password={password}
+          protectedPost={protectedPost}
           publishedAt={publishedAt}
           viewCount={viewCount}
           content={content}

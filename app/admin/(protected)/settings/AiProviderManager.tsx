@@ -182,14 +182,18 @@ export function AiProviderManager() {
     setModelsWarning('')
 
     try {
-      const params = new URLSearchParams({
+      const payload: Record<string, string> = {
         provider: editing.provider,
         base_url: normalizeBaseUrl(editing.base_url),
-      })
-      if (editing.id) params.set('profile_id', String(editing.id))
-      if (editing.api_key.trim()) params.set('api_key', editing.api_key.trim())
+      }
+      if (editing.id) payload.profile_id = String(editing.id)
+      if (editing.api_key.trim()) payload.api_key = editing.api_key.trim()
 
-      const res = await fetch(`/api/admin/ai-provider/models?${params.toString()}`)
+      const res = await fetch('/api/admin/ai-provider/models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
       const data = (await res.json()) as ModelsResponse
       if (!res.ok) {
         throw new Error(data.error || '获取模型列表失败')

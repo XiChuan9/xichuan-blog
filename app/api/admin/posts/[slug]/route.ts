@@ -1,27 +1,26 @@
 import { deletePost, getPostBySlug, updatePost } from '@/lib/db'
-import { isAdminAuthenticated, COOKIE_NAME } from '@/lib/admin-auth'
+import { authenticateCookieRequest } from '@/lib/admin-auth'
 import { invalidatePublicContentCache } from '@/lib/cache'
 import { buildAutoDescription, normalizePostSlug } from '@/lib/post-utils'
 import { enqueueBackgroundJob } from '@/lib/background-jobs'
+import { sanitizeArticleHtml } from '@/lib/html-sanitize'
 import { getRouteContextWithDb, jsonError, jsonOk, parseJsonBody } from '@/lib/server/route-helpers'
 import type { NextRequest } from 'next/server'
 
-async function checkAuth(req: NextRequest): Promise<boolean> {
-  const token = req.cookies.get(COOKIE_NAME)?.value
-  return isAdminAuthenticated(token)
+async function checkAuth(req: NextRequest, db: D1Database): Promise<boolean> {
+  return authenticateCookieRequest(req, db)
 }
 
 type Ctx = { params: Promise<{ slug: string }> }
 
 // 获取单篇文章（编辑用）
 export async function GET(req: NextRequest, { params }: Ctx) {
-  if (!(await checkAuth(req))) {
-    return jsonError('Unauthorized', 401)
-  }
-
   const { slug } = await params
   const route = await getRouteContextWithDb('DB not configured')
   if (!route.ok) return route.response
+  if (!(await checkAuth(req, route.db))) {
+    return jsonError('Unauthorized', 401)
+  }
 
   const post = await getPostBySlug(route.db, slug)
   if (!post) return jsonError('文章不存在', 404)
@@ -31,14 +30,13 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
 // 更新文章
 export async function PUT(req: NextRequest, { params }: Ctx) {
-  if (!(await checkAuth(req))) {
-    return jsonError('Unauthorized', 401)
-  }
-
   const { slug } = await params
   const route = await getRouteContextWithDb('DB not configured')
   if (!route.ok) return route.response
   const { env, db, ctx } = route
+  if (!(await checkAuth(req, db))) {
+    return jsonError('Unauthorized', 401)
+  }
 
   const post = await getPostBySlug(db, slug)
   if (!post) return jsonError('文章不存在', 404)
@@ -80,7 +78,7 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
       slug: nextSlug || undefined,
       title,
       content,
-      html,
+      html: typeof html === 'string' ? sanitizeArticleHtml(html) : html,
       category,
       status,
       password,
@@ -121,14 +119,13 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
 
 // 删除文章
 export async function DELETE(req: NextRequest, { params }: Ctx) {
-  if (!(await checkAuth(req))) {
-    return jsonError('Unauthorized', 401)
-  }
-
   const { slug } = await params
   const route = await getRouteContextWithDb('DB not configured')
   if (!route.ok) return route.response
   const { env, db, ctx } = route
+  if (!(await checkAuth(req, db))) {
+    return jsonError('Unauthorized', 401)
+  }
 
   try {
     const post = await getPostBySlug(db, slug)

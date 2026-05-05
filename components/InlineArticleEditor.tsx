@@ -45,7 +45,7 @@ interface InlineArticleEditorProps {
   html: string
   category?: string | null
   coverImage?: string | null
-  password?: string | null // 仅用于显示加密状态，不可编辑
+  protectedPost?: boolean // 仅用于显示加密状态，不可编辑
   publishedAt?: number    // unix timestamp
   viewCount?: number
   content?: string        // plain text, for reading time
@@ -58,7 +58,7 @@ export function InlineArticleEditor({
   html,
   category,
   coverImage: initialCoverImage,
-  password,
+  protectedPost,
   publishedAt,
   viewCount,
   content,
@@ -495,7 +495,7 @@ export function InlineArticleEditor({
           </>
         )}
         <DownloadMarkdown title={title} html={html} />
-        {password && (
+        {protectedPost && (
           <>
             <span aria-hidden>·</span>
             <div className="flex items-center gap-1.5">

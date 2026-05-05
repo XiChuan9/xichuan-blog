@@ -13,6 +13,7 @@ import {
   resolveAiConfigSecret,
   type AIProviderProfileRow,
 } from '@/lib/ai-provider-profiles'
+import { normalizeSafeProviderBaseUrl } from '@/lib/server/url-security'
 
 interface SaveProfileBody {
   id?: number
@@ -33,10 +34,10 @@ interface SaveProfileBody {
 function buildProfilePayload(body: SaveProfileBody) {
   const name = (body.name || '').trim()
   const model = (body.model || '').trim()
-  const baseUrl = normalizeBaseUrl(body.base_url || '')
+  const baseUrlResult = normalizeSafeProviderBaseUrl(body.base_url || '')
 
   if (!name) return { error: '配置名称不能为空' }
-  if (!baseUrl) return { error: 'Base URL 不能为空' }
+  if (!baseUrlResult.ok) return { error: baseUrlResult.error }
   if (!model) return { error: '模型名称不能为空' }
 
   return {
@@ -46,7 +47,7 @@ function buildProfilePayload(body: SaveProfileBody) {
     provider_type: (body.provider_type || 'openai_compatible').trim() || 'openai_compatible',
     provider_category: (body.provider_category || '').trim(),
     api_key_url: (body.api_key_url || '').trim(),
-    base_url: baseUrl,
+    base_url: normalizeBaseUrl(baseUrlResult.url),
     model,
     temperature: clampTemperature(Number(body.temperature)),
     max_tokens: clampMaxTokens(Number(body.max_tokens)),

@@ -45,9 +45,7 @@ export function PostRow({ post, categories }: PostRowProps) {
 
   const siteUrl = getSiteUrl()
   const baseArticleUrl = `${siteUrl}/${post.slug}`
-  const articleUrl = post.password
-    ? `${baseArticleUrl}?pwd=${post.password}`
-    : baseArticleUrl
+  const articleUrl = baseArticleUrl
 
   const isDeleted = post.status === 'deleted'
 
@@ -66,7 +64,7 @@ export function PostRow({ post, categories }: PostRowProps) {
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(articleUrl)
-      toast.success(post.password ? '已复制带密码的链接' : '已复制链接')
+      toast.success('已复制链接')
     } catch {
       toast.error('复制失败')
     }

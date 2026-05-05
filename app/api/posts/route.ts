@@ -6,6 +6,7 @@ import { remark } from 'remark'
 import remarkGfm from 'remark-gfm'
 import remarkHtml from 'remark-html'
 import { buildAutoDescription, normalizePostSlug } from '@/lib/post-utils'
+import { sanitizeArticleHtml } from '@/lib/html-sanitize'
 import {
   ensureAuthenticatedRequest,
   getRouteContextWithDb,
@@ -57,14 +58,15 @@ export async function POST(req: NextRequest) {
     const slug = customSlug || `${date}-${nanoid(6)}`
 
     // 3. 优先使用编辑器直接生成的 HTML，兼容旧版 Markdown 提交
-    const htmlContent =
+    const htmlContent = sanitizeArticleHtml(
       rawHtml ||
       (
         await remark()
           .use(remarkGfm)
           .use(remarkHtml, { sanitize: false })
           .process(content)
-      ).toString()
+      ).toString(),
+    )
 
     // 4. 立即保存到 D1（不等 AI）
     const postId = await createPost(db, {
@@ -151,7 +153,11 @@ export async function PATCH(req: NextRequest) {
     if (nextSlug && nextSlug !== currentSlug) updates.slug = nextSlug
     if (payload.title !== undefined) updates.title = payload.title
     if (payload.content !== undefined) updates.content = payload.content
-    if (payload.html !== undefined) updates.html = payload.html
+    if (payload.html !== undefined) {
+      updates.html = typeof payload.html === 'string'
+        ? sanitizeArticleHtml(payload.html)
+        : payload.html
+    }
     if (payload.description !== undefined) {
       const rawDescription = typeof payload.description === 'string' ? payload.description.trim() : ''
       const rawContent = typeof payload.content === 'string' ? payload.content : ''

@@ -16,7 +16,7 @@ export function InlineArticleEditorClient(props: {
   html: string
   category?: string | null
   coverImage?: string | null
-  password?: string | null
+  protectedPost?: boolean
   publishedAt?: number
   viewCount?: number
   content?: string
