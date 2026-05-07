@@ -35,6 +35,16 @@ export function jsonError(error: string, status = 500) {
   return NextResponse.json({ error }, { status })
 }
 
+export function jsonInternalError(error = '请求失败，请稍后重试') {
+  return jsonError(error, 500)
+}
+
+export function jsonRateLimitError(retryAfterSeconds: number, error = '请求过于频繁，请稍后再试') {
+  const response = jsonError(error, 429)
+  response.headers.set('Retry-After', String(Math.max(1, Math.ceil(retryAfterSeconds))))
+  return response
+}
+
 export async function parseJsonBody<T>(
   req: NextRequest,
   invalidMessage = '请求体不是有效 JSON',

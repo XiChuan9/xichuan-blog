@@ -1,17 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPostBySlug, isPubliclyAccessiblePost } from '@/lib/db'
 import { getAppCloudflareEnv } from '@/lib/cloudflare'
+import { jsonRateLimitError } from '@/lib/server/route-helpers'
 import {
   createPostAccessToken,
   getPostAccessCookieName,
   POST_ACCESS_COOKIE_MAX_AGE,
   verifyPassword,
 } from '@/lib/password'
+import {
+  checkRateLimit,
+  clearRateLimit,
+  getRequestIp,
+  recordRateLimitFailure,
+} from '@/lib/rate-limit'
 
 type Ctx = { params: Promise<{ slug: string }> }
 
+const POST_UNLOCK_LIMIT = {
+  limit: 8,
+  windowMs: 10 * 60 * 1000,
+  blockMs: 10 * 60 * 1000,
+}
+
 export async function POST(req: NextRequest, { params }: Ctx) {
   const { slug } = await params
+  const rateLimitKey = `post-unlock:${slug}:${getRequestIp(req.headers)}`
+  const rateLimit = checkRateLimit(rateLimitKey, POST_UNLOCK_LIMIT)
+  if (!rateLimit.allowed) {
+    return jsonRateLimitError(rateLimit.retryAfterSeconds)
+  }
+
   const env = await getAppCloudflareEnv().catch(() => null)
   if (!env?.DB) {
     return NextResponse.json({ error: '数据库未配置' }, { status: 500 })
@@ -34,8 +53,14 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
   const password = (body.password || '').trim()
   if (!password || !(await verifyPassword(password, post.password))) {
+    const failureLimit = recordRateLimitFailure(rateLimitKey, POST_UNLOCK_LIMIT)
+    if (!failureLimit.allowed) {
+      return jsonRateLimitError(failureLimit.retryAfterSeconds)
+    }
     return NextResponse.json({ error: '密码错误，请重试' }, { status: 401 })
   }
+
+  clearRateLimit(rateLimitKey)
 
   const token = await createPostAccessToken(post.slug, post.password)
   const response = NextResponse.json({ success: true })

@@ -21,6 +21,7 @@ vi.mock('@/lib/server/route-helpers', () => ({
   ensureAuthenticatedRequest: mocks.ensureAuthenticatedRequest,
   getRouteEnvWithDb: mocks.getRouteEnvWithDb,
   jsonError: (message: string, status = 500) => Response.json({ error: message }, { status }),
+  jsonInternalError: (message = '请求失败，请稍后重试') => Response.json({ error: message }, { status: 500 }),
   jsonOk: (data: unknown, status = 200) => Response.json(data, { status }),
   parseJsonBody: mocks.parseJsonBody,
 }))
@@ -73,6 +74,16 @@ describe('/api/admin/categories route', () => {
 
     expect(response.status).toBe(401)
     await expect(response.json()).resolves.toEqual({ error: '未授权' })
+    expect(mocks.deleteCategory).not.toHaveBeenCalled()
+  })
+
+  it('prevents deleting the default category', async () => {
+    mocks.parseJsonBody.mockResolvedValue({ slug: 'uncategorized' })
+
+    const response = await DELETE({} as never)
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error: '默认分类不能删除' })
     expect(mocks.deleteCategory).not.toHaveBeenCalled()
   })
 })

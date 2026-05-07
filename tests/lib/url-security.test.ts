@@ -3,6 +3,7 @@ import {
   normalizeSafeProviderBaseUrl,
   normalizeSafeRemoteFetchUrl,
 } from '@/lib/server/url-security'
+import { normalizeWechatBridgeBaseUrl } from '@/lib/wechat-bridge-config'
 
 describe('url security helpers', () => {
   it('normalizes public HTTPS provider base URLs', () => {
@@ -46,5 +47,18 @@ describe('url security helpers', () => {
     expect(normalizeSafeRemoteFetchUrl('http://assets.example.com/a.webp', 'https://blog.example.com').ok).toBe(false)
     expect(normalizeSafeRemoteFetchUrl('https://user:pass@assets.example.com/a.webp', 'https://blog.example.com').ok).toBe(false)
     expect(normalizeSafeRemoteFetchUrl('https://169.254.169.254/latest/meta-data', 'https://blog.example.com').ok).toBe(false)
+  })
+
+  it('applies public HTTPS URL rules to WeChat bridge base URLs', () => {
+    expect(normalizeWechatBridgeBaseUrl('https://bridge.example.com/api/')).toEqual({
+      ok: true,
+      url: 'https://bridge.example.com/api',
+    })
+
+    expect(normalizeWechatBridgeBaseUrl('http://bridge.example.com')).toEqual({
+      ok: false,
+      error: 'Bridge Base URL 必须使用 https',
+    })
+    expect(normalizeWechatBridgeBaseUrl('https://127.0.0.1:8788').ok).toBe(false)
   })
 })

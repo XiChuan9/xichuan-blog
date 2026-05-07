@@ -20,7 +20,8 @@
     "cf-typegen": "bash scripts/cf-typegen.sh",
     "cf:init": "bash scripts/cf-init.sh",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "secret:scan": "bash scripts/secret-scan.sh"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.19.1",
@@ -63,7 +64,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "drizzle-kit": "^0.31.10",
     "esbuild": "^0.28.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",

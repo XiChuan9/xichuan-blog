@@ -43,7 +43,7 @@ export async function isAdminAuthConfigured(): Promise<boolean> {
 
 export const COOKIE_NAME = 'xichuan-blog_admin'
 export const COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 天
-const SESSION_TOKEN_PREFIX = 'qms_'
+const SESSION_TOKEN_PREFIX = 'xcs_'
 
 interface AdminSessionRow {
   expires_at: number

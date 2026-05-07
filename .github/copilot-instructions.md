@@ -1,122 +1,56 @@
-# 向阳乔木博客 - AI 协作指南
+# XiChuan Blog - AI 协作指南
 
 ## 项目概述
 
-这是一个基于 Cloudflare + Next.js + Novel 编辑器构建的现代博客系统，专注于 AI 工具和知识的传播。
-
-## 设计上下文
-
-### 用户画像
-
-**目标读者**：AI 产品和模型爱好者、科技达人、前沿学习者
-
-**阅读场景**：
-- 工作日 9:00-24:00
-- 工作间隙、通勤路上、晚间深度阅读
-- 电脑和手机各占一半
-
-**阅读目的**：
-- 学习新的 AI 模型工具和实战用法
-- 快速获取前沿解读
-- 收藏 AI 领军人物故事和深度内容
-
-### 品牌定位
-
-**向阳乔木** - 传播 AI 工具和知识的综合性学习平台
-
-**核心价值**：
-- 温暖而理性：有人情味，但保持专业判断
-- 专业有态度：不是中立的资讯站，有自己的观点
-- 有料有收获：每篇文章都要让读者学到实用的东西
-
-**情感目标**：
-- 阅读中：温暖亲切、专注投入
-- 阅读后：有收获、有启发、值得分享
-
-### 美学方向
-
-**温暖的专业主义** - 像一本精心设计的技术杂志，而不是冷冰冰的文档站
-
-**配色方案**：
-- 背景：米黄色 `#f5f4ed`（温暖、护眼）
-- 强调色：珊瑚色 `#c96442`（有活力但不刺眼）
-- 文字：深棕色 `#141413`（柔和的黑色）
-
-**字体策略**：
-- 英文：Geist Sans（简洁现代）
-- 标题：Georgia（经典衬线）
-- 中文正文：TsangerJinKai02（仓耳今楷，提升阅读体验）
-
-**参考风格**：
-- ✅ 喜欢：Claude、Stripe、Notion、Linear、Vercel 的简洁精致
-- ❌ 避免：过度商业化、极客风、花哨装饰
-
-## 设计原则
-
-### 1. 内容优先，减少干扰
-- 首页文章列表要清晰扫描
-- 文章页专注阅读
-- 留白充足但不浪费空间
-
-### 2. 温暖但专业
-- 用圆角和柔和的阴影营造亲切感
-- 用清晰的排版和层次体现专业性
-- 避免过于可爱或过于严肃
-
-### 3. 响应式优先
-- 移动端和桌面端同等重要
-- 不要在移动端隐藏关键功能
-- 适配不同屏幕尺寸
-
-### 4. 性能与体验
-- 快速加载（Cloudflare 边缘计算）
-- 流畅交互（避免布局抖动）
-- 渐进增强（基础功能不依赖 JS）
-
-### 5. 可扩展性
-- 为商业化预留空间（广告位、付费内容）
-- 支持多种内容类型（文章、视频、音频）
-- 后台可配置的设计元素
+XiChuan Blog 是一个开源 Next.js 博客系统，目标是在 Vercel 和 Cloudflare 两条部署路径上保持同一套应用代码可用。项目内置后台写作、TipTap/Novel 编辑器、媒体上传、主题配置、AI 供应商配置、文章元数据生成、公众号 Bridge 发布和 Obsidian 发布插件。
 
 ## 技术栈
 
-- **前端**：Next.js 16 + TypeScript + Tailwind CSS
-- **编辑器**：Novel (基于 TipTap)
-- **数据库**：Cloudflare D1 (SQLite)
-- **缓存**：Cloudflare KV
-- **存储**：Cloudflare R2
-- **AI**：硅基流动 API (Qwen 2.5)
-- **部署**：Cloudflare Pages
+- **前端**：Next.js 16 + React 19 + TypeScript + Tailwind CSS
+- **编辑器**：Novel / TipTap
+- **Vercel 推荐运行时**：Turso/libSQL + Vercel Blob
+- **Cloudflare 兼容运行时**：Cloudflare D1 + R2 + KV + OpenNext
+- **AI**：OpenAI-compatible providers、Workers AI REST fallback、可配置图像供应商
+- **部署**：Vercel 为主，Cloudflare Pages/Workers 保持兼容
 
-## 代码规范
+## 工程原则
 
-### TypeScript
-- 严格类型检查
-- 避免 `any`，使用具体类型
-- 优先使用接口而非类型别名
+### 运行时兼容
 
-### React/Next.js
-- 优先使用 Server Components
-- Client Components 明确标注 `'use client'`
-- 使用 Next.js 16 的新特性（如 async searchParams）
+- 业务代码优先依赖 `CloudflareEnv` 形状和本项目 runtime adapter，不在路由里直接假设具体平台。
+- Vercel 专用 SDK 只能动态导入，避免 Cloudflare 构建解析失败。
+- Cloudflare 部署脚本会重复执行 `db/schema.sql`，schema 必须保持幂等。
+- Turso/D1 的 SQL 行为差异要在 repository 或 runtime adapter 层处理。
 
-### Tailwind CSS
-- 使用 CSS 变量定义主题色
-- 避免内联样式，优先使用 Tailwind 类
-- 复杂样式抽取到 `globals.css`
+### 安全默认值
 
-### 性能优化
-- 图片使用 Next.js Image 组件
-- 代码分割和懒加载
-- 利用 Cloudflare 边缘缓存
+- 后台 API 必须先鉴权，再处理写入、上传或外部请求。
+- 不把数据库、SDK、网络异常原文作为 500 响应返回客户端；详细信息只写服务端日志。
+- 外部 Base URL 必须使用公开 HTTPS 地址，不能包含凭据，不能指向 localhost 或内网地址。
+- 上传文件名和编辑器插入内容不能拼接 HTML 字符串；优先使用结构化编辑器节点。
+- SVG 上传默认禁用，除非后续引入严格消毒和独立下载响应策略。
 
-## 品牌资产
+### 数据库与搜索
 
-- **域名**：blog.qiaomu.ai
-- **X (Twitter)**：[@vista8](https://x.com/vista8)
-- **微信公众号**：向阳乔木推荐看
-- **GitHub**：[@joeseesun](https://github.com/joeseesun)
+- `lib/repositories/schema.ts` 是运行时自举和修复逻辑；`db/schema.sql` 是 Cloudflare 部署引导逻辑，两者要同步。
+- `posts_fts` 使用 FTS5 external-content 表，更新和删除触发器必须使用特殊 `delete` 行语义。
+- 搜索可以在 FTS 不可用时回退到 LIKE，但 LIKE 查询要转义 `%` 和 `_`。
 
----
+### 前端体验
 
-*详细设计上下文请参考项目根目录的 `.impeccable.md` 文件*
+- 这是面向写作和阅读的工具型博客，不做营销落地页。
+- 后台界面优先稳定、密集、可扫描；不要引入装饰性卡片堆叠或大面积渐变背景。
+- 文章阅读体验保持内容优先，避免会遮挡正文或造成布局跳动的交互。
+
+## 常用命令
+
+- `npm run verify:quick`：lint、测试、默认 Next build
+- `npm run verify:vercel`：lint、测试、Vercel runtime build
+- `npm run verify`：lint、测试、Cloudflare OpenNext build
+- `npm run deploy:cloudflare`：Cloudflare 部署路径
+
+## 项目信息
+
+- **GitHub**：https://github.com/XiChuan9/xichuan-blog
+- **默认 Vercel 示例域名**：https://xichuan-blog.vercel.app
+- **许可证**：MIT

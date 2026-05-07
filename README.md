@@ -165,12 +165,15 @@ npm run preview
 - 编辑器 Ask AI 预设动作
 
 所有 API Key 都不会进入仓库，首次部署时通过 Cloudflare secret 或后台配置补齐。
+在 Vercel 上则通过项目 Environment Variables 配置。
 
 ## 技术栈
 
 - Next.js 16
 - React 19
 - TypeScript
+- Turso / libSQL
+- Vercel Blob
 - OpenNext for Cloudflare
 - Cloudflare Workers
 - Cloudflare D1
@@ -187,10 +190,17 @@ npm run preview
 | `npm run verify:quick` | 跑 lint、test、build |
 | `npm run verify:vercel` | 跑 lint、test、Vercel 模式 build |
 | `npm run verify` | 跑完整验证链路 |
+| `npm run secret:scan` | 扫描常见密钥 pattern |
 | `npm run cf:init` | 初始化 Cloudflare 资源和模板默认设置 |
 | `npm run preview` | Worker 运行时预览 |
 | `npm run deploy` | 部署到 Cloudflare Workers（兼容旧命令） |
 | `npm run deploy:cloudflare` | 部署到 Cloudflare Workers |
+
+## 贡献与安全
+
+- 贡献指南：[CONTRIBUTING.md](CONTRIBUTING.md)
+- 行为准则：[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- 安全策略：[SECURITY.md](SECURITY.md)
 
 ## 作者
 

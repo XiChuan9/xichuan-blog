@@ -6,9 +6,9 @@ import {
   MarkdownView,
 } from "obsidian";
 import {
-  QmblogSettings,
+  XichuanBlogSettings,
   DEFAULT_SETTINGS,
-  QmblogSettingTab,
+  XichuanBlogSettingTab,
 } from "./settings";
 import { PublishModal, PublishOptions, PublishResult } from "./publish-modal";
 
@@ -33,8 +33,8 @@ interface PostResult {
   error?: string;
 }
 
-export default class QmblogPublisher extends Plugin {
-  settings: QmblogSettings = DEFAULT_SETTINGS;
+export default class XichuanBlogPublisher extends Plugin {
+  settings: XichuanBlogSettings = DEFAULT_SETTINGS;
   private statusBarEl: HTMLElement | null = null;
 
   async onload() {
@@ -89,7 +89,7 @@ export default class QmblogPublisher extends Plugin {
     );
 
     // Settings tab
-    this.addSettingTab(new QmblogSettingTab(this.app, this));
+    this.addSettingTab(new XichuanBlogSettingTab(this.app, this));
   }
 
   async loadSettings() {
@@ -580,7 +580,7 @@ export default class QmblogPublisher extends Plugin {
     mimeType: string
   ): Promise<UploadResult> {
     // Build multipart form data manually for Obsidian's requestUrl
-    const boundary = "----ObsidianQmblog" + Date.now().toString(36);
+    const boundary = "----ObsidianXichuanBlog" + Date.now().toString(36);
     const uint8 = new Uint8Array(buffer);
 
     // Build the multipart body

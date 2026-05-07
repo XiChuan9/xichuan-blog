@@ -2,6 +2,20 @@ import { createClient, type Client, type InValue, type ResultSet } from '@tursod
 
 type D1BindableValue = string | number | boolean | bigint | null | ArrayBuffer | ArrayBufferView | Date | undefined
 
+interface TursoD1BatchResult<T> {
+  results: T[]
+  success: true
+  meta: {
+    duration: number
+    size_after: number
+    rows_read: number
+    rows_written: number
+    last_row_id: number
+    changed_db: boolean
+    changes: number
+  }
+}
+
 function normalizeArg(value: D1BindableValue): InValue {
   if (value === undefined) return null
   if (ArrayBuffer.isView(value)) {
@@ -73,6 +87,13 @@ class TursoD1PreparedStatement implements D1PreparedStatement {
       args: this.values,
     })
   }
+
+  toStatement() {
+    return {
+      sql: this.query,
+      args: this.values,
+    }
+  }
 }
 
 class TursoD1Database implements D1Database {
@@ -84,6 +105,32 @@ class TursoD1Database implements D1Database {
 
   prepare(query: string): D1PreparedStatement {
     return new TursoD1PreparedStatement(this.client, query)
+  }
+
+  async batch<T = unknown>(statements: D1PreparedStatement[]): Promise<TursoD1BatchResult<T>[]> {
+    const resultSets = await this.client.batch(
+      statements.map((statement) => {
+        if (!(statement instanceof TursoD1PreparedStatement)) {
+          throw new Error('Unsupported prepared statement for Turso batch')
+        }
+        return statement.toStatement()
+      }),
+      'write',
+    )
+
+    return resultSets.map((result) => ({
+      results: result.rows.map((row) => rowToObject(row, result.columns) as T),
+      success: true,
+      meta: {
+        duration: 0,
+        size_after: 0,
+        rows_read: result.rows.length,
+        rows_written: Number(result.rowsAffected ?? 0),
+        last_row_id: Number(result.lastInsertRowid ?? 0),
+        changed_db: Number(result.rowsAffected ?? 0) > 0,
+        changes: Number(result.rowsAffected ?? 0),
+      },
+    }))
   }
 }
 

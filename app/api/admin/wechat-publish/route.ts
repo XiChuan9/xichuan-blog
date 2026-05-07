@@ -1,5 +1,12 @@
 import type { NextRequest } from 'next/server'
-import { ensureAuthenticatedRequest, getRouteEnvWithDb, jsonError, jsonOk, parseJsonBody } from '@/lib/server/route-helpers'
+import {
+  ensureAuthenticatedRequest,
+  getRouteEnvWithDb,
+  jsonError,
+  jsonInternalError,
+  jsonOk,
+  parseJsonBody,
+} from '@/lib/server/route-helpers'
 import { assertWechatBridgeReady, fetchWechatBridgeJson, getWechatBridgeConfig } from '@/lib/wechat-bridge-config'
 import { resolvePostCoverImage } from '@/lib/default-cover-images'
 import { getSiteUrl } from '@/lib/site-config'
@@ -66,6 +73,7 @@ export async function POST(req: NextRequest) {
 
     return jsonOk(result)
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : '提交公众号发布失败', 500)
+    console.error('Submit WeChat publish failed:', error)
+    return jsonInternalError('提交公众号发布失败，请稍后重试')
   }
 }

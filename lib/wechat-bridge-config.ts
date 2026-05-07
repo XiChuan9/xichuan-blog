@@ -3,9 +3,9 @@ import {
   decryptApiKey,
   encryptApiKey,
   maskApiKey,
-  normalizeBaseUrl,
   resolveAiConfigSecret,
 } from '@/lib/ai-provider-profiles'
+import { normalizeSafeProviderBaseUrl } from '@/lib/server/url-security'
 
 const WECHAT_BRIDGE_SETTING_KEY = 'wechat_bridge_config'
 
@@ -43,16 +43,45 @@ function parseStoredConfig(raw: string | null): StoredWechatBridgeConfig {
   }
 }
 
+function formatBridgeBaseUrlError(error: string) {
+  return error.replace(/^Base URL/, 'Bridge Base URL')
+}
+
+export function normalizeWechatBridgeBaseUrl(input: string): { ok: true; url: string } | { ok: false; error: string } {
+  if (!input.trim()) return { ok: true, url: '' }
+
+  const result = normalizeSafeProviderBaseUrl(input)
+  if (!result.ok) {
+    return { ok: false, error: formatBridgeBaseUrlError(result.error) }
+  }
+
+  return result
+}
+
+function requireWechatBridgeBaseUrl(input: string) {
+  const result = normalizeWechatBridgeBaseUrl(input)
+  if (!result.ok) {
+    throw new Error(result.error)
+  }
+  return result.url
+}
+
+function normalizeStoredBridgeBaseUrl(input: string) {
+  const result = normalizeWechatBridgeBaseUrl(input)
+  return result.ok ? result.url : ''
+}
+
 function buildPublicConfig(stored: StoredWechatBridgeConfig, token: string): WechatBridgePublicConfig {
-  const baseUrl = normalizeBaseUrl(stored.base_url || '')
+  const baseUrl = normalizeWechatBridgeBaseUrl(stored.base_url || '')
+  const normalizedBaseUrl = baseUrl.ok ? baseUrl.url : ''
   const enabled = Boolean(stored.enabled)
   const hasToken = Boolean(token.trim() || stored.token_encrypted?.trim())
 
   return {
     enabled,
-    base_url: baseUrl,
+    base_url: normalizedBaseUrl,
     token_masked: (stored.token_masked || '').trim(),
-    configured: Boolean(baseUrl && hasToken),
+    configured: Boolean(normalizedBaseUrl && hasToken),
   }
 }
 
@@ -98,8 +127,8 @@ export async function saveWechatBridgeConfig(
   const secret = resolveAiConfigSecret(env)
   const normalizedBaseUrl =
     input.base_url !== undefined
-      ? normalizeBaseUrl(input.base_url)
-      : normalizeBaseUrl(existing.base_url || '')
+      ? requireWechatBridgeBaseUrl(input.base_url)
+      : normalizeStoredBridgeBaseUrl(existing.base_url || '')
   const nextToken = (input.token || '').trim()
 
   const stored: StoredWechatBridgeConfig = {
@@ -130,7 +159,7 @@ export function assertWechatBridgeReady(config: WechatBridgeConfig): WechatBridg
 }
 
 function buildBridgeUrl(baseUrl: string, path: string): string {
-  const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
+  const normalizedBaseUrl = requireWechatBridgeBaseUrl(baseUrl)
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
   return `${normalizedBaseUrl}${normalizedPath}`
 }

@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { ensureAuthenticatedRequest, getRouteEnvWithDb, jsonError, jsonOk } from '@/lib/server/route-helpers'
+import { ensureAuthenticatedRequest, getRouteEnvWithDb, jsonInternalError, jsonOk } from '@/lib/server/route-helpers'
 import {
   assertWechatBridgeReady,
   fetchWechatBridgeJson,
@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
       accounts: response.accounts || [],
     })
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : '获取 bridge 账号列表失败', 500)
+    console.error('Fetch WeChat bridge accounts failed:', error)
+    return jsonInternalError('获取 bridge 账号列表失败，请稍后重试')
   }
 }

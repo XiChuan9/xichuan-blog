@@ -1,6 +1,17 @@
 import type { NextRequest } from 'next/server'
-import { ensureAuthenticatedRequest, getRouteEnvWithDb, jsonError, jsonOk, parseJsonBody } from '@/lib/server/route-helpers'
-import { getWechatBridgePublicConfig, saveWechatBridgeConfig } from '@/lib/wechat-bridge-config'
+import {
+  ensureAuthenticatedRequest,
+  getRouteEnvWithDb,
+  jsonError,
+  jsonInternalError,
+  jsonOk,
+  parseJsonBody,
+} from '@/lib/server/route-helpers'
+import {
+  getWechatBridgePublicConfig,
+  normalizeWechatBridgeBaseUrl,
+  saveWechatBridgeConfig,
+} from '@/lib/wechat-bridge-config'
 
 interface SaveWechatBridgeBody {
   enabled?: boolean
@@ -28,20 +39,26 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await parseJsonBody<SaveWechatBridgeBody>(req)
-    const baseUrl = (body.base_url || '').trim()
+    const rawBaseUrl = (body.base_url || '').trim()
+    const normalizedBaseUrl = normalizeWechatBridgeBaseUrl(rawBaseUrl)
 
-    if (body.enabled && !baseUrl) {
+    if (!normalizedBaseUrl.ok) {
+      return jsonError(normalizedBaseUrl.error, 400)
+    }
+
+    if (body.enabled && !normalizedBaseUrl.url) {
       return jsonError('启用 bridge 前需要填写 Base URL', 400)
     }
 
     const config = await saveWechatBridgeConfig(route.db, route.env, {
       enabled: body.enabled,
-      base_url: baseUrl,
+      base_url: normalizedBaseUrl.url,
       token: body.token,
     })
 
     return jsonOk({ success: true, config })
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : '保存 bridge 配置失败', 500)
+    console.error('Save WeChat bridge config failed:', error)
+    return jsonInternalError('保存 bridge 配置失败，请稍后重试')
   }
 }

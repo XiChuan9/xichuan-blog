@@ -17,6 +17,7 @@ vi.mock('@/lib/db', () => ({
 }))
 
 import { POST } from '@/app/api/posts/[slug]/unlock/route'
+import { __resetRateLimitsForTests } from '@/lib/rate-limit'
 
 function createUnlockRequest(password: string) {
   return new NextRequest('https://blog.example.com/api/posts/secret-post/unlock', {
@@ -29,6 +30,7 @@ function createUnlockRequest(password: string) {
 describe('/api/posts/[slug]/unlock route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    __resetRateLimitsForTests()
     mocks.getAppCloudflareEnv.mockResolvedValue({ DB: { kind: 'db' } })
     mocks.getPostBySlug.mockResolvedValue({
       slug: 'secret-post',
@@ -61,5 +63,20 @@ describe('/api/posts/[slug]/unlock route', () => {
     expect(response.status).toBe(401)
     expect(response.headers.get('set-cookie')).toBeNull()
     await expect(response.json()).resolves.toEqual({ error: '密码错误，请重试' })
+  })
+
+  it('rate limits repeated incorrect unlock attempts', async () => {
+    let response: Response | null = null
+
+    for (let i = 0; i < 8; i += 1) {
+      response = await POST(createUnlockRequest('wrong-password'), {
+        params: Promise.resolve({ slug: 'secret-post' }),
+      })
+    }
+
+    expect(response).not.toBeNull()
+    expect(response!.status).toBe(429)
+    expect(response!.headers.get('retry-after')).toBeTruthy()
+    await expect(response!.json()).resolves.toEqual({ error: '请求过于频繁，请稍后再试' })
   })
 })

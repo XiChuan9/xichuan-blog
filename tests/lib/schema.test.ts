@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 function createMockDb(options: { failFirstFtsRebuild?: boolean } = {}) {
   const statements: string[] = []
@@ -60,5 +62,19 @@ describe('ensureSchema', () => {
     expect(statements).toContain('DROP TABLE IF EXISTS posts_fts')
     expect(statements.filter((sql) => sql === "INSERT INTO posts_fts(posts_fts) VALUES ('rebuild')")).toHaveLength(2)
     warnSpy.mockRestore()
+  })
+
+  it('keeps the Cloudflare D1 bootstrap schema idempotent and FTS-safe', () => {
+    const sql = readFileSync(join(process.cwd(), 'db/schema.sql'), 'utf8')
+
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS posts')
+    expect(sql).toContain('CREATE INDEX IF NOT EXISTS idx_posts_slug')
+    expect(sql).toContain('CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts')
+    expect(sql).toContain('DROP TRIGGER IF EXISTS posts_au')
+    expect(sql).toContain("VALUES ('delete', old.id, old.title, old.content);")
+    expect(sql).toContain('INSERT OR IGNORE INTO categories')
+    expect(sql).toContain('token_preview TEXT')
+    expect(sql).not.toContain('UPDATE posts_fts SET')
+    expect(sql).not.toContain('DELETE FROM posts_fts WHERE rowid')
   })
 })

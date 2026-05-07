@@ -1,5 +1,5 @@
 import { Modal, App, Setting, requestUrl } from "obsidian";
-import type QmblogPublisher from "./main";
+import type XichuanBlogPublisher from "./main";
 
 interface CategoryItem {
   name: string;
@@ -25,7 +25,7 @@ export interface PublishResult {
 type ProgressCallback = (message: string) => void;
 
 export class PublishModal extends Modal {
-  private plugin: QmblogPublisher;
+  private plugin: XichuanBlogPublisher;
   private defaultTitle: string;
   private onPublish: (
     options: PublishOptions,
@@ -43,7 +43,7 @@ export class PublishModal extends Modal {
 
   constructor(
     app: App,
-    plugin: QmblogPublisher,
+    plugin: XichuanBlogPublisher,
     defaultTitle: string,
     onPublish: (
       options: PublishOptions,

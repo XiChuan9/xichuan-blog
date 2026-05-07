@@ -1,6 +1,6 @@
 import { getSetting, setSetting } from '@/lib/db'
 import { authenticateCookieRequest } from '@/lib/admin-auth'
-import { getRouteEnvWithDb, jsonError, jsonOk, parseJsonBody } from '@/lib/server/route-helpers'
+import { getRouteEnvWithDb, jsonError, jsonInternalError, jsonOk, parseJsonBody } from '@/lib/server/route-helpers'
 import type { NextRequest } from 'next/server'
 
 async function getAuthorizedRoute(req: NextRequest) {
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     return jsonOk({ key, value })
   } catch (error) {
     console.error('Get setting error:', error)
-    return jsonError(error instanceof Error ? error.message : '获取设置失败', 500)
+    return jsonInternalError('获取设置失败，请稍后重试')
   }
 }
 
@@ -47,6 +47,6 @@ export async function POST(req: NextRequest) {
     return jsonOk({ success: true })
   } catch (error) {
     console.error('Set setting error:', error)
-    return jsonError(error instanceof Error ? error.message : '保存设置失败', 500)
+    return jsonInternalError('保存设置失败，请稍后重试')
   }
 }

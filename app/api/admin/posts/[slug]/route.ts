@@ -4,7 +4,7 @@ import { invalidatePublicContentCache } from '@/lib/cache'
 import { buildAutoDescription, normalizePostSlug } from '@/lib/post-utils'
 import { enqueueBackgroundJob } from '@/lib/background-jobs'
 import { sanitizeArticleHtml } from '@/lib/html-sanitize'
-import { getRouteContextWithDb, jsonError, jsonOk, parseJsonBody } from '@/lib/server/route-helpers'
+import { getRouteContextWithDb, jsonError, jsonInternalError, jsonOk, parseJsonBody } from '@/lib/server/route-helpers'
 import type { NextRequest } from 'next/server'
 
 async function checkAuth(req: NextRequest, db: D1Database): Promise<boolean> {
@@ -113,7 +113,7 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
       return jsonError('slug 已存在，请换一个', 409)
     }
     console.error('PUT /api/admin/posts/[slug] error:', err)
-    return jsonError(err instanceof Error ? err.message : '保存失败', 500)
+    return jsonInternalError('保存失败，请稍后重试')
   }
 }
 
@@ -156,12 +156,6 @@ export async function DELETE(req: NextRequest, { params }: Ctx) {
     return jsonOk({ success: true })
   } catch (error) {
     console.error('Delete post failed:', error)
-    return jsonOk(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '删除失败，请重试',
-      },
-      500,
-    )
+    return jsonInternalError('删除失败，请稍后重试')
   }
 }

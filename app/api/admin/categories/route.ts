@@ -3,6 +3,7 @@ import {
   ensureAuthenticatedRequest,
   getRouteEnvWithDb,
   jsonError,
+  jsonInternalError,
   jsonOk,
   parseJsonBody,
 } from '@/lib/server/route-helpers'
@@ -35,7 +36,8 @@ export async function GET(req: NextRequest) {
     const categories = await getCategories(route.db)
     return jsonOk({ categories })
   } catch (err) {
-    return jsonError(String(err), 500)
+    console.error('List categories failed:', err)
+    return jsonInternalError('获取分类失败，请稍后重试')
   }
 }
 
@@ -54,7 +56,8 @@ export async function POST(req: NextRequest) {
     await createCategory(route.db, name, slug)
     return jsonOk({ success: true })
   } catch (err) {
-    return jsonError(String(err), 500)
+    console.error('Create category failed:', err)
+    return jsonInternalError('创建分类失败，请稍后重试')
   }
 }
 
@@ -73,7 +76,8 @@ export async function PATCH(req: NextRequest) {
     await updateCategory(route.db, oldSlug, name, slug)
     return jsonOk({ success: true })
   } catch (err) {
-    return jsonError(String(err), 500)
+    console.error('Update category failed:', err)
+    return jsonInternalError('更新分类失败，请稍后重试')
   }
 }
 
@@ -88,10 +92,14 @@ export async function DELETE(req: NextRequest) {
     if (!slug) {
       return jsonError('slug不能为空', 400)
     }
+    if (slug === 'uncategorized') {
+      return jsonError('默认分类不能删除', 400)
+    }
 
     await deleteCategory(route.db, slug)
     return jsonOk({ success: true })
   } catch (err) {
-    return jsonError(String(err), 500)
+    console.error('Delete category failed:', err)
+    return jsonInternalError('删除分类失败，请稍后重试')
   }
 }

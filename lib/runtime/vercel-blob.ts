@@ -2,6 +2,27 @@ import { resolveBlobAccess } from '@/lib/runtime/blob-access'
 
 type R2PutValue = File | ArrayBuffer | ArrayBufferView | ReadableStream
 
+interface VercelBlobMetadata {
+  etag?: string
+  size?: number | null
+  contentType?: string | null
+  contentDisposition?: string | null
+  cacheControl?: string | null
+}
+
+interface VercelBlobGetResult {
+  statusCode?: number
+  stream?: ReadableStream<Uint8Array> | null
+  headers?: Headers
+  response?: { headers?: Headers }
+  blob?: VercelBlobMetadata
+  etag?: string
+  size?: number | null
+  contentType?: string | null
+  contentDisposition?: string | null
+  cacheControl?: string | null
+}
+
 function normalizePutBody(value: R2PutValue): File | ArrayBuffer | ReadableStream {
   if (ArrayBuffer.isView(value)) {
     const copy = new Uint8Array(value.byteLength)
@@ -48,19 +69,22 @@ export function createVercelBlobBucket(env: NodeJS.ProcessEnv = process.env): R2
       })
 
       if (!result) return null
-      const statusCode = Number(result.statusCode)
+      const normalizedResult = result as unknown as VercelBlobGetResult
+      const statusCode = Number(normalizedResult.statusCode ?? 200)
       if (statusCode !== 200 && statusCode !== 206) return null
-      const blob = result.blob
+      if (!normalizedResult.stream) return null
+
+      const blob = normalizedResult.blob ?? normalizedResult
+      const responseHeaders = normalizedResult.headers ?? normalizedResult.response?.headers
 
       return {
-        body: result.stream,
-        httpEtag: blob.etag,
+        body: normalizedResult.stream,
+        httpEtag: blob.etag ?? '',
         size: blob.size ?? 0,
         writeHttpMetadata(headers: Headers) {
           if (blob.contentType) headers.set('Content-Type', blob.contentType)
           if (blob.contentDisposition) headers.set('Content-Disposition', blob.contentDisposition)
           if (blob.cacheControl) headers.set('Cache-Control', blob.cacheControl)
-          const responseHeaders = (result as { response?: { headers?: Headers } }).response?.headers
           const contentRange = responseHeaders?.get('content-range')
           const contentLength = responseHeaders?.get('content-length')
           if (contentRange) headers.set('Content-Range', contentRange)

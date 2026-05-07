@@ -16,7 +16,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -31,8 +31,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run quick verification
+      - name: Run Vercel verification
         env:
           CI: true
           NEXT_TELEMETRY_DISABLED: '1'
-        run: npm run verify:quick
+        run: npm run verify:vercel
+
+      - name: Run Cloudflare build
+        env:
+          CI: true
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: |
+          rm -rf .next .open-next
+          npx opennextjs-cloudflare build
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+
+      - name: Run secret scan
+        run: npm run secret:scan

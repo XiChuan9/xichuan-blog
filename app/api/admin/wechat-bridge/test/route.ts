@@ -1,7 +1,18 @@
 import type { NextRequest } from 'next/server'
-import { ensureAuthenticatedRequest, getRouteEnvWithDb, jsonError, jsonOk, parseJsonBody } from '@/lib/server/route-helpers'
-import { fetchWechatBridgeJson, getWechatBridgeConfig, type WechatBridgeAccount } from '@/lib/wechat-bridge-config'
-import { normalizeBaseUrl } from '@/lib/ai-provider-profiles'
+import {
+  ensureAuthenticatedRequest,
+  getRouteEnvWithDb,
+  jsonError,
+  jsonInternalError,
+  jsonOk,
+  parseJsonBody,
+} from '@/lib/server/route-helpers'
+import {
+  fetchWechatBridgeJson,
+  getWechatBridgeConfig,
+  normalizeWechatBridgeBaseUrl,
+  type WechatBridgeAccount,
+} from '@/lib/wechat-bridge-config'
 
 interface BridgeTestBody {
   base_url?: string
@@ -18,7 +29,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await parseJsonBody<BridgeTestBody>(req)
     const stored = await getWechatBridgeConfig(route.db, route.env)
-    const baseUrl = normalizeBaseUrl(body.base_url || stored.base_url || '')
+    const baseUrlResult = normalizeWechatBridgeBaseUrl(body.base_url || stored.base_url || '')
+    if (!baseUrlResult.ok) {
+      return jsonError(baseUrlResult.error, 400)
+    }
+    const baseUrl = baseUrlResult.url
     const token = (body.token || '').trim() || stored.token
 
     if (!baseUrl || !token) {
@@ -35,6 +50,7 @@ export async function POST(req: NextRequest) {
       accounts: accountsResponse.accounts || [],
     })
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : '测试 bridge 连接失败', 500)
+    console.error('Test WeChat bridge connection failed:', error)
+    return jsonInternalError('测试 bridge 连接失败，请稍后重试')
   }
 }

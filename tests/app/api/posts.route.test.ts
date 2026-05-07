@@ -20,6 +20,7 @@ vi.mock('@/lib/server/route-helpers', () => ({
   ensureAuthenticatedRequest: mocks.ensureAuthenticatedRequest,
   getRouteContextWithDb: mocks.getRouteContextWithDb,
   jsonError: (message: string, status = 500) => Response.json({ error: message }, { status }),
+  jsonInternalError: (message = '请求失败，请稍后重试') => Response.json({ error: message }, { status: 500 }),
   jsonOk: (data: unknown, status = 200) => Response.json(data, { status }),
   parseJsonBody: mocks.parseJsonBody,
 }))
