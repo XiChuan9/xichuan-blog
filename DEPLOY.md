@@ -1,6 +1,6 @@
 # 部署指南
 
-Qiaomu Blog Open Source 支持两条平行部署路径：
+XiChuan Blog 支持两条平行部署路径：
 
 - `Vercel + Turso/libSQL + Vercel Blob`
 - `OpenNext + Cloudflare Workers + D1 + R2`

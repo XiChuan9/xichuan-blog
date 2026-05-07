@@ -1,10 +1,10 @@
 {
-  "id": "qiaomu-blog-publisher",
-  "name": "Qiaomu Blog Publisher",
+  "id": "xichuan-blog-publisher",
+  "name": "XiChuan Blog Publisher",
   "version": "1.0.0",
   "minAppVersion": "1.0.0",
-  "description": "一键发布笔记到 Qiaomu Blog 草稿",
-  "author": "joeseesun",
-  "authorUrl": "https://github.com/joeseesun",
+  "description": "一键发布笔记到 XiChuan Blog 草稿",
+  "author": "XiChuan9",
+  "authorUrl": "https://github.com/XiChuan9",
   "isDesktopOnly": false
 }

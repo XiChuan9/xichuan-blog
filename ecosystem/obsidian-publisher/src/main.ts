@@ -41,14 +41,14 @@ export default class QmblogPublisher extends Plugin {
     await this.loadSettings();
 
     // 1. Ribbon icon (left sidebar)
-    this.addRibbonIcon("upload-cloud", "发布到 Qiaomu Blog", async () => {
+    this.addRibbonIcon("upload-cloud", "发布到 XiChuan Blog", async () => {
       await this.publishCurrentNote();
     });
 
     // 2. Command palette
     this.addCommand({
-      id: "publish-to-qiaomu-blog",
-      name: "发布到 Qiaomu Blog",
+      id: "publish-to-xichuan-blog",
+      name: "发布到 XiChuan Blog",
       editorCallback: () => {
         this.publishCurrentNote();
       },
@@ -56,7 +56,7 @@ export default class QmblogPublisher extends Plugin {
 
     // 3. Status bar (bottom)
     this.statusBarEl = this.addStatusBarItem();
-    this.statusBarEl.setText("Qiaomu Blog");
+    this.statusBarEl.setText("XiChuan Blog");
     this.statusBarEl.addClass("mod-clickable");
     this.statusBarEl.onClickEvent(() => {
       this.publishCurrentNote();
@@ -67,7 +67,7 @@ export default class QmblogPublisher extends Plugin {
       this.app.workspace.on("editor-menu", (menu) => {
         menu.addItem((item) => {
           item
-            .setTitle("发布到 Qiaomu Blog")
+            .setTitle("发布到 XiChuan Blog")
             .setIcon("upload-cloud")
             .onClick(() => this.publishCurrentNote());
         });
@@ -80,7 +80,7 @@ export default class QmblogPublisher extends Plugin {
         if (file instanceof TFile && file.extension === "md") {
           menu.addItem((item) => {
             item
-              .setTitle("发布到 Qiaomu Blog")
+              .setTitle("发布到 XiChuan Blog")
               .setIcon("upload-cloud")
               .onClick(() => this.publishFile(file));
           });
@@ -107,7 +107,7 @@ export default class QmblogPublisher extends Plugin {
     this.statusBarEl.setText(text);
     if (revertMs) {
       setTimeout(() => {
-        if (this.statusBarEl) this.statusBarEl.setText("Qiaomu Blog");
+        if (this.statusBarEl) this.statusBarEl.setText("XiChuan Blog");
       }, revertMs);
     }
   }
@@ -160,17 +160,17 @@ export default class QmblogPublisher extends Plugin {
       this,
       title,
       async (options, onProgress) => {
-        this.setStatus("Qiaomu Blog \u23F3");
+        this.setStatus("XiChuan Blog \u23F3");
         try {
           const result = await this.doPublish(file, content, options, onProgress);
           if (result.success) {
-            this.setStatus("Qiaomu Blog \u2713", 3000);
+            this.setStatus("XiChuan Blog \u2713", 3000);
           } else {
-            this.setStatus("Qiaomu Blog \u2717", 5000);
+            this.setStatus("XiChuan Blog \u2717", 5000);
           }
           return result;
         } catch (e) {
-          this.setStatus("Qiaomu Blog \u2717", 5000);
+          this.setStatus("XiChuan Blog \u2717", 5000);
           throw e;
         }
       }
@@ -363,7 +363,7 @@ export default class QmblogPublisher extends Plugin {
         src = src.slice(1, -1);
       }
 
-      // Skip URLs (http/https) and already-uploaded qmblog URLs
+      // Skip URLs (http/https) and already-uploaded xichuan-blog URLs
       if (src.startsWith("http://") || src.startsWith("https://")) {
         continue;
       }
@@ -415,7 +415,7 @@ export default class QmblogPublisher extends Plugin {
   }
 
   /**
-   * Find remote (non-qmblog) image URLs in markdown
+   * Find remote (non-xichuan-blog) image URLs in markdown
    */
   findRemoteImageRefs(
     content: string
@@ -430,7 +430,7 @@ export default class QmblogPublisher extends Plugin {
     while ((match = mdRegex.exec(content)) !== null) {
       const src = match[2].trim();
 
-      // Skip qmblog URLs - already hosted
+      // Skip xichuan-blog URLs - already hosted
       try {
         const url = new URL(src);
         if (url.host === apiHost) continue;
@@ -572,7 +572,7 @@ export default class QmblogPublisher extends Plugin {
   }
 
   /**
-   * Upload a file to qmblog R2 via /api/uploads
+   * Upload a file to xichuan-blog R2 via /api/uploads
    */
   async uploadFile(
     buffer: ArrayBuffer,

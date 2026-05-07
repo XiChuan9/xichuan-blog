@@ -3,7 +3,7 @@ import { getSiteUrl } from '@/lib/site-config'
 import { sanitizeArticleHtml } from '@/lib/html-sanitize'
 
 const SITE_URL = getSiteUrl()
-const SITE_TITLE = '乔木博客'
+const SITE_TITLE = 'XiChuan Blog'
 const SITE_DESCRIPTION = '记录思考，分享所学，留住当下。'
 
 interface RssPost {

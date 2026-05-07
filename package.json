@@ -1,11 +1,11 @@
 {
-  "name": "qiaomu-blog-opensource",
+  "name": "xichuan-blog",
   "version": "0.1.0",
   "private": false,
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "build:vercel": "QMBLOG_RUNTIME=vercel next build --webpack",
+    "build:vercel": "XICHUAN_BLOG_RUNTIME=vercel next build --webpack",
     "test": "vitest",
     "test:run": "vitest run",
     "verify": "bash scripts/verify.sh full",
@@ -81,11 +81,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/joeseesun/qiaomu-blog-opensource.git"
+    "url": "git+https://github.com/XiChuan9/xichuan-blog.git"
   },
-  "homepage": "https://github.com/joeseesun/qiaomu-blog-opensource",
+  "homepage": "https://github.com/XiChuan9/xichuan-blog",
   "bugs": {
-    "url": "https://github.com/joeseesun/qiaomu-blog-opensource/issues"
+    "url": "https://github.com/XiChuan9/xichuan-blog/issues"
   },
   "cloudflare": {
     "bindings": {

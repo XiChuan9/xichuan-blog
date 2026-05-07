@@ -1,5 +1,5 @@
-export const THEME_STORAGE_KEY = 'qm_site_theme'
-export const THEME_CHANGE_EVENT = 'qm-theme-change'
+export const THEME_STORAGE_KEY = 'xc_site_theme'
+export const THEME_CHANGE_EVENT = 'xichuan-theme-change'
 
 export const THEME_OPTIONS = [
   {

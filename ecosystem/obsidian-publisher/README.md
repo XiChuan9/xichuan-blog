@@ -1,6 +1,6 @@
-# obsidian-qiaomu-blog-publisher
+# obsidian-xichuan-blog-publisher
 
-一键将 Obsidian 笔记发布到你自己的 Qiaomu Blog 草稿箱。
+一键将 Obsidian 笔记发布到你自己的 XiChuan Blog 草稿箱。
 
 ## 功能
 
@@ -16,7 +16,7 @@
 
 1. 下载 `main.js`、`manifest.json` 到你的 Obsidian 插件目录：
    ```
-   {你的笔记库}/.obsidian/plugins/qiaomu-blog-publisher/
+   {你的笔记库}/.obsidian/plugins/xichuan-blog-publisher/
    ```
 2. 在 Obsidian 设置中启用插件
 
@@ -32,13 +32,13 @@ npm run build
 
 ## 配置
 
-1. 打开 Obsidian 设置 > 第三方插件 > Qiaomu Blog Publisher
+1. 打开 Obsidian 设置 > 第三方插件 > XiChuan Blog Publisher
 2. 填写 API 地址（默认 `https://your-domain.com`）
 3. 填写 API Token（在你的博客后台获取）
 
 ## 使用
 
-- **命令面板**：`Ctrl/Cmd + P` > 搜索 “发布到 Qiaomu Blog”
+- **命令面板**：`Ctrl/Cmd + P` > 搜索 “发布到 XiChuan Blog”
 - **侧边栏图标**：点击上传图标
 
 ## 支持的媒体格式

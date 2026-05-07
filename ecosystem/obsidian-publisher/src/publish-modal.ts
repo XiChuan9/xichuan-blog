@@ -59,19 +59,19 @@ export class PublishModal extends Modal {
 
   async onOpen() {
     const { contentEl, modalEl } = this;
-    modalEl.addClass("qmblog-publish-modal");
+    modalEl.addClass("xichuan-blog-publish-modal");
     this.injectStyles();
 
     contentEl.empty();
-    contentEl.createEl("h2", { text: "发布到 Qiaomu Blog" });
+    contentEl.createEl("h2", { text: "发布到 XiChuan Blog" });
 
     const loadingEl = contentEl.createDiv({
-      cls: "qmblog-center-view",
+      cls: "xichuan-blog-center-view",
     });
-    loadingEl.createDiv({ cls: "qmblog-spinner" });
+    loadingEl.createDiv({ cls: "xichuan-blog-spinner" });
     loadingEl.createDiv({
       text: "正在加载分类...",
-      cls: "qmblog-center-text",
+      cls: "xichuan-blog-center-text",
     });
 
     try {
@@ -88,47 +88,47 @@ export class PublishModal extends Modal {
   }
 
   private injectStyles() {
-    const styleId = "qmblog-modal-styles";
+    const styleId = "xichuan-blog-modal-styles";
     if (document.getElementById(styleId)) return;
 
     const style = document.createElement("style");
     style.id = styleId;
     style.textContent = `
-      .qmblog-publish-modal {
+      .xichuan-blog-publish-modal {
         width: 520px;
         max-width: 90vw;
       }
-      .qmblog-center-view {
+      .xichuan-blog-center-view {
         display: flex;
         flex-direction: column;
         align-items: center;
         padding: 32px 16px;
         gap: 16px;
       }
-      .qmblog-spinner {
+      .xichuan-blog-spinner {
         width: 28px;
         height: 28px;
         border: 3px solid var(--background-modifier-border);
         border-top-color: var(--interactive-accent);
         border-radius: 50%;
-        animation: qmblog-spin 0.6s linear infinite;
+        animation: xichuan-blog-spin 0.6s linear infinite;
       }
-      @keyframes qmblog-spin {
+      @keyframes xichuan-blog-spin {
         to { transform: rotate(360deg); }
       }
-      .qmblog-center-text {
+      .xichuan-blog-center-text {
         color: var(--text-muted);
         font-size: var(--font-ui-small);
       }
-      .qmblog-result-icon {
+      .xichuan-blog-result-icon {
         font-size: 40px;
         line-height: 1;
       }
-      .qmblog-result-heading {
+      .xichuan-blog-result-heading {
         margin: 0;
         font-size: var(--font-ui-medium);
       }
-      .qmblog-callout-box {
+      .xichuan-blog-callout-box {
         width: 100%;
         max-width: 360px;
         padding: 10px 14px;
@@ -136,18 +136,18 @@ export class PublishModal extends Modal {
         text-align: center;
         font-size: var(--font-ui-small);
       }
-      .qmblog-callout-success {
+      .xichuan-blog-callout-success {
         background: rgba(var(--color-green-rgb, 72, 199, 142), 0.1);
         border: 1px solid rgba(var(--color-green-rgb, 72, 199, 142), 0.25);
         color: var(--text-normal);
       }
-      .qmblog-callout-error {
+      .xichuan-blog-callout-error {
         background: rgba(var(--color-red-rgb, 233, 49, 71), 0.1);
         border: 1px solid rgba(var(--color-red-rgb, 233, 49, 71), 0.25);
         color: var(--text-normal);
         word-break: break-word;
       }
-      .qmblog-stats-line {
+      .xichuan-blog-stats-line {
         color: var(--text-muted);
         font-size: var(--font-ui-smaller);
       }
@@ -172,7 +172,7 @@ export class PublishModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    contentEl.createEl("h2", { text: "发布到 Qiaomu Blog" });
+    contentEl.createEl("h2", { text: "发布到 XiChuan Blog" });
 
     // Title
     new Setting(contentEl)
@@ -273,14 +273,14 @@ export class PublishModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    contentEl.createEl("h2", { text: "发布到 Qiaomu Blog" });
+    contentEl.createEl("h2", { text: "发布到 XiChuan Blog" });
 
-    const wrapper = contentEl.createDiv({ cls: "qmblog-center-view" });
-    wrapper.createDiv({ cls: "qmblog-spinner" });
+    const wrapper = contentEl.createDiv({ cls: "xichuan-blog-center-view" });
+    wrapper.createDiv({ cls: "xichuan-blog-spinner" });
 
     this.progressTextEl = wrapper.createDiv({
       text: message,
-      cls: "qmblog-center-text",
+      cls: "xichuan-blog-center-text",
     });
   }
 
@@ -296,19 +296,19 @@ export class PublishModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    const wrapper = contentEl.createDiv({ cls: "qmblog-center-view" });
+    const wrapper = contentEl.createDiv({ cls: "xichuan-blog-center-view" });
 
-    wrapper.createDiv({ cls: "qmblog-result-icon", text: "\u2713" });
+    wrapper.createDiv({ cls: "xichuan-blog-result-icon", text: "\u2713" });
 
     const heading = wrapper.createEl("h3", {
       text: "发布成功",
-      cls: "qmblog-result-heading",
+      cls: "xichuan-blog-result-heading",
     });
     heading.style.color = "var(--color-green)";
 
     // Title callout
     const callout = wrapper.createDiv({
-      cls: "qmblog-callout-box qmblog-callout-success",
+      cls: "xichuan-blog-callout-box xichuan-blog-callout-success",
     });
     callout.createDiv({
       text: this.titleValue,
@@ -321,7 +321,7 @@ export class PublishModal extends Modal {
       if (result.failedCount > 0) {
         statsText += `，${result.failedCount} 个失败`;
       }
-      wrapper.createDiv({ cls: "qmblog-stats-line", text: statsText });
+      wrapper.createDiv({ cls: "xichuan-blog-stats-line", text: statsText });
     }
 
     // Action buttons
@@ -359,19 +359,19 @@ export class PublishModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    const wrapper = contentEl.createDiv({ cls: "qmblog-center-view" });
+    const wrapper = contentEl.createDiv({ cls: "xichuan-blog-center-view" });
 
-    wrapper.createDiv({ cls: "qmblog-result-icon", text: "\u2717" });
+    wrapper.createDiv({ cls: "xichuan-blog-result-icon", text: "\u2717" });
 
     const heading = wrapper.createEl("h3", {
       text: "发布失败",
-      cls: "qmblog-result-heading",
+      cls: "xichuan-blog-result-heading",
     });
     heading.style.color = "var(--color-red)";
 
     // Error callout
     const callout = wrapper.createDiv({
-      cls: "qmblog-callout-box qmblog-callout-error",
+      cls: "xichuan-blog-callout-box xichuan-blog-callout-error",
     });
     callout.setText(errorMsg);
 

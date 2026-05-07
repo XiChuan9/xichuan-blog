@@ -1,5 +1,5 @@
 /**
- * Qiaomu Blog Clipper - Popup Script (Redesigned)
+ * XiChuan Blog Clipper - Popup Script (Redesigned)
  *
  * Views: clip | settings | progress | success | error
  */

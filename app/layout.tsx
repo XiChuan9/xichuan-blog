@@ -40,8 +40,8 @@ const DEFAULT_SITE_OG_IMAGE = resolveDefaultSiteCoverImage(SITE_URL)
 export const metadata: Metadata = {
   metadataBase: getSiteUrlObject(),
   title: {
-    default: '乔木博客',
-    template: '%s · 乔木博客',
+    default: 'XiChuan Blog',
+    template: '%s · XiChuan Blog',
   },
   description: '记录思考，分享所学，留住当下。技术、生活、读书笔记的数字花园。',
   icons: {
@@ -64,15 +64,15 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'zh_CN',
     url: SITE_URL,
-    siteName: '乔木博客',
-    title: '乔木博客',
+    siteName: 'XiChuan Blog',
+    title: 'XiChuan Blog',
     description: '记录思考，分享所学，留住当下。技术、生活、读书笔记的数字花园。',
     images: [
       {
         url: DEFAULT_SITE_OG_IMAGE,
         width: 1280,
         height: 720,
-        alt: '乔木博客',
+        alt: 'XiChuan Blog',
       },
     ],
   },
@@ -80,7 +80,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@vista8',
     creator: '@vista8',
-    title: '乔木博客',
+    title: 'XiChuan Blog',
     description: '记录思考，分享所学，留住当下。技术、生活、读书笔记的数字花园。',
     images: [DEFAULT_SITE_OG_IMAGE],
   },
@@ -126,9 +126,9 @@ export default async function RootLayout({
     document.documentElement.setAttribute('data-font', key || 'default');
     if (c) {
       document.documentElement.style.setProperty('--body-font', c.family);
-      if (c.link && !document.getElementById('qm-font-link')) {
+      if (c.link && !document.getElementById('xichuan-font-link')) {
         var l = document.createElement('link');
-        l.id = 'qm-font-link';
+        l.id = 'xichuan-font-link';
         l.rel = 'stylesheet';
         l.href = c.link;
         document.head.appendChild(l);

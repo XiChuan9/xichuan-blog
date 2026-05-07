@@ -1,6 +1,6 @@
-# Qiaomu Blog Clipper
+# XiChuan Blog Clipper
 
-一键把网页内容剪藏到你自己的 Qiaomu Blog 草稿箱。
+一键把网页内容剪藏到你自己的 XiChuan Blog 草稿箱。
 
 ## 功能
 

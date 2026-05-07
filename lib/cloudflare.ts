@@ -7,10 +7,10 @@ import {
 export async function getAppCloudflareContext() {
   if (
     process.env.VERCEL === '1' ||
-    process.env.QMBLOG_RUNTIME === 'vercel' ||
+    process.env.XICHUAN_BLOG_RUNTIME === 'vercel' ||
     (
       process.env.NEXT_PHASE === 'phase-production-build' &&
-      process.env.QMBLOG_RUNTIME !== 'cloudflare'
+      process.env.XICHUAN_BLOG_RUNTIME !== 'cloudflare'
     )
   ) {
     return getVercelRuntimeContext()

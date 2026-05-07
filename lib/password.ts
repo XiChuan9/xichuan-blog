@@ -40,7 +40,7 @@ export function generatePassword(): string {
 
 // 密码哈希（SHA-256 + 固定盐）
 // 注意：这是简化方案，生产环境建议使用 bcrypt/argon2
-const SALT = 'qmblog_salt_v1' // 固定盐，可以移到环境变量
+const SALT = 'xichuan-blog_salt_v1' // 固定盐，可以移到环境变量
 
 async function sha256Hex(input: string): Promise<string> {
   const encoder = new TextEncoder()
@@ -64,7 +64,7 @@ export async function verifyPassword(input: string, stored: string): Promise<boo
 
 export function getPostAccessCookieName(slug: string): string {
   const safeSlug = slug.trim().replace(/[^a-z0-9_-]+/gi, '_').slice(0, 80) || 'post'
-  return `qmblog_post_${safeSlug}`
+  return `xichuan-blog_post_${safeSlug}`
 }
 
 export const POST_ACCESS_COOKIE_MAX_AGE = 60 * 60 * 12 // 12 小时

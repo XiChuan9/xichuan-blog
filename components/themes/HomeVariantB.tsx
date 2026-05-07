@@ -38,7 +38,7 @@ function EditorialNavBar({
   navLinks: SiteNavLink[]
 }) {
   const defaultLinks = [
-    { label: 'GitHub', url: 'https://github.com/joeseesun/', openInNewTab: true },
+    { label: 'GitHub', url: 'https://github.com/XiChuan9/', openInNewTab: true },
     { label: 'Twitter', url: 'https://x.com/vista8/', openInNewTab: true },
     { label: 'RSS', url: '/feed.xml', openInNewTab: false },
   ]
@@ -126,7 +126,7 @@ export function HomeVariantB({
             fontFamily: '"Noto Serif SC", "Source Han Serif SC", Georgia, serif',
             color: FG,
           }}>
-            乔木<span style={{ color: ACCENT }}>·</span>博客
+            XiChuan<span style={{ color: ACCENT }}>·</span>Blog
           </h1>
         </Link>
         <div className="editorial-masthead-meta" style={{
@@ -361,7 +361,7 @@ export function HomeVariantB({
         fontFamily: '"JetBrains Mono", ui-monospace, monospace',
         letterSpacing: '0.1em',
       }}>
-        <span>© {new Date().getFullYear()} 乔木博客</span>
+        <span>© {new Date().getFullYear()} XiChuan Blog</span>
         <span>独立 · 不商业化 · RSS 友好</span>
       </div>
 

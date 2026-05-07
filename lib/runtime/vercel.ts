@@ -26,7 +26,7 @@ function createNoopExecutionContext() {
 
 export function isVercelRuntimeConfigured(env: NodeJS.ProcessEnv = process.env) {
   return Boolean(
-    env.QMBLOG_RUNTIME === 'vercel' ||
+    env.XICHUAN_BLOG_RUNTIME === 'vercel' ||
     resolveTursoConfigFromEnv(env) ||
     hasVercelBlobConfig(env) ||
     env.VERCEL === '1',

@@ -45,7 +45,7 @@ const BASE_SCHEMA_STATEMENTS = [
   "INSERT OR IGNORE INTO site_settings (key, value) VALUES ('body_font', 'serif')",
   `INSERT OR IGNORE INTO site_settings (key, value) VALUES (
     'nav_links',
-    '[{"label":"GitHub","url":"https://github.com/joeseesun/qiaomu-blog-opensource","openInNewTab":true},{"label":"Admin","url":"/admin","openInNewTab":false},{"label":"RSS","url":"/feed.xml","openInNewTab":false}]'
+    '[{"label":"GitHub","url":"https://github.com/XiChuan9/xichuan-blog","openInNewTab":true},{"label":"Admin","url":"/admin","openInNewTab":false},{"label":"RSS","url":"/feed.xml","openInNewTab":false}]'
   )`,
 ]
 

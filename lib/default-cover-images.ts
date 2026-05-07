@@ -1,11 +1,11 @@
 const DEFAULT_POST_COVER_IMAGES = [
-  '/default-covers/qm-cover-1.jpg',
-  '/default-covers/qm-cover-2.jpg',
-  '/default-covers/qm-cover-3.jpg',
+  '/default-covers/xichuan-cover-1.jpg',
+  '/default-covers/xichuan-cover-2.jpg',
+  '/default-covers/xichuan-cover-3.jpg',
 ] as const
 const DEFAULT_SITE_COVER_IMAGE = DEFAULT_POST_COVER_IMAGES[0]
 
-const FALLBACK_COVER_SEED = 'qmblog-default-cover'
+const FALLBACK_COVER_SEED = 'xichuan-blog-default-cover'
 
 interface CoverSeedInput {
   slug?: string | null

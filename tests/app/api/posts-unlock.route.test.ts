@@ -47,7 +47,7 @@ describe('/api/posts/[slug]/unlock route', () => {
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({ success: true })
     const setCookie = response.headers.get('set-cookie') || ''
-    expect(setCookie).toContain('qmblog_post_secret-post=')
+    expect(setCookie).toContain('xichuan-blog_post_secret-post=')
     expect(setCookie).toContain('HttpOnly')
     expect(setCookie).toContain('Path=/secret-post')
     expect(setCookie.toLowerCase()).toContain('samesite=lax')

@@ -31,7 +31,7 @@ describe('admin cookie authentication request checks', () => {
       prepare: vi.fn((sql: string) => ({
         bind: (...args: unknown[]) => ({
           first: vi.fn(async () => {
-            if (sql.includes('SELECT id, is_active FROM api_tokens WHERE token = ?') && args[0] === 'qm_legacy_token') {
+            if (sql.includes('SELECT id, is_active FROM api_tokens WHERE token = ?') && args[0] === 'xc_legacy_token') {
               return { id: 9, is_active: 1 }
             }
             return null
@@ -43,12 +43,12 @@ describe('admin cookie authentication request checks', () => {
       })),
     } as unknown as D1Database
 
-    await expect(verifyApiToken(db, 'qm_legacy_token')).resolves.toBe(true)
+    await expect(verifyApiToken(db, 'xc_legacy_token')).resolves.toBe(true)
 
     expect(updates).toHaveLength(1)
     expect(updates[0].sql).toContain('SET token = ?')
-    expect(updates[0].args[0]).not.toBe('qm_legacy_token')
-    expect(updates[0].args[1]).toBe('qm_legacy_...')
+    expect(updates[0].args[0]).not.toBe('xc_legacy_token')
+    expect(updates[0].args[1]).toBe('xc_legacy_...')
     expect(updates[0].args[2]).toBe(9)
   })
 })

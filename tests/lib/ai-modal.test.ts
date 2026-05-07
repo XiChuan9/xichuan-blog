@@ -15,8 +15,8 @@ describe('ai-modal helpers', () => {
   })
 
   it('creates a stable history storage key with fallback scope', () => {
-    expect(createHistoryStorageKey('inline-article')).toBe('qmblog:ask-ai-history:inline-article')
-    expect(createHistoryStorageKey('')).toBe('qmblog:ask-ai-history:default')
+    expect(createHistoryStorageKey('inline-article')).toBe('xichuan-blog:ask-ai-history:inline-article')
+    expect(createHistoryStorageKey('')).toBe('xichuan-blog:ask-ai-history:default')
   })
 
   it('extracts a clean title candidate from markdown output', () => {
