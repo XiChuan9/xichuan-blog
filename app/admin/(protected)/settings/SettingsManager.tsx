@@ -41,6 +41,17 @@ export function SettingsManager({
 }: Props) {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
+  const [navLinks, setNavLinks] = useState(initialNavLinks)
+  const [customJs, setCustomJs] = useState(initialCustomJs)
+  const [bodyFont, setBodyFont] = useState(initialBodyFont)
+  const [defaultTheme, setDefaultTheme] = useState(initialDefaultTheme)
+
+  const updateLocalSetting = (key: string, value: string) => {
+    if (key === 'nav_links') setNavLinks(value)
+    if (key === 'custom_js') setCustomJs(value)
+    if (key === 'body_font') setBodyFont(value)
+    if (key === 'default_theme') setDefaultTheme(value)
+  }
 
   const persistSetting = async (key: string, value: string) => {
     const res = await fetch('/api/admin/settings', {
@@ -56,6 +67,7 @@ export function SettingsManager({
     setMsg('')
     try {
       await persistSetting(key, value)
+      updateLocalSetting(key, value)
       setMsg('已保存')
       setTimeout(() => setMsg(''), 2000)
     } catch (e) {
@@ -73,6 +85,8 @@ export function SettingsManager({
         persistSetting('default_theme', theme),
         persistSetting('body_font', font),
       ])
+      setDefaultTheme(theme)
+      setBodyFont(font)
       setMsg('已保存')
       setTimeout(() => setMsg(''), 2000)
     } catch (e) {
@@ -94,7 +108,7 @@ export function SettingsManager({
             </div>
           )}
           <NavLinksEditor
-            initialValue={initialNavLinks}
+            initialValue={navLinks}
             onSave={(val) => save('nav_links', val)}
             saving={saving}
           />
@@ -120,7 +134,7 @@ export function SettingsManager({
             此处适合添加 Google Analytics、百度统计等第三方统计脚本的 HTTPS 外链。
           </p>
           <CustomJsEditor
-            initialValue={initialCustomJs}
+            initialValue={customJs}
             onSave={(val) => save('custom_js', val)}
             saving={saving}
           />
@@ -132,8 +146,8 @@ export function SettingsManager({
       label: '主题管理',
       content: (
         <ThemeManager
-          initialTheme={normalizeTheme(initialDefaultTheme)}
-          initialFont={(initialBodyFont || 'default') as BodyFont}
+          initialTheme={normalizeTheme(defaultTheme)}
+          initialFont={(bodyFont || 'default') as BodyFont}
           onSave={saveThemeSettings}
           saving={saving}
         />
