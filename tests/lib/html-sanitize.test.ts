@@ -8,7 +8,7 @@ describe('sanitizeArticleHtml', () => {
       <p><a href="javascript:alert(1)" target="_blank">bad</a></p>
       <img src="/api/images/image/a.webp" onerror="alert(1)" alt="cover">
       <script>alert(1)</script>
-      <iframe src="https://www.youtube.com/embed/demo" allowfullscreen></iframe>
+      <iframe src="https://www.youtube.com/embed/demo" allow="camera *; fullscreen; microphone *; autoplay" allowfullscreen></iframe>
     `)
 
     expect(html).toContain('<h2>标题</h2>')
@@ -18,5 +18,8 @@ describe('sanitizeArticleHtml', () => {
     expect(html).not.toContain('onerror')
     expect(html).not.toContain('javascript:')
     expect(html).not.toContain('<script')
+    expect(html).toContain('allow="fullscreen; autoplay"')
+    expect(html).not.toContain('camera')
+    expect(html).not.toContain('microphone')
   })
 })

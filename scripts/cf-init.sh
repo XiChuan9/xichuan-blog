@@ -150,7 +150,8 @@ cat <<EOF
 下一步:
   1. 配置本地环境变量: cp .env.example .env.local
   2. 设置线上 secrets:
-     npx wrangler secret put ADMIN_PASSWORD -c ${LOCAL_CONFIG_PATH}
+     npm run password:hash -- "your-admin-password"
+     npx wrangler secret put ADMIN_PASSWORD_HASH -c ${LOCAL_CONFIG_PATH}
      npx wrangler secret put ADMIN_TOKEN_SALT -c ${LOCAL_CONFIG_PATH}
      npx wrangler secret put AI_CONFIG_ENCRYPTION_SECRET -c ${LOCAL_CONFIG_PATH}
      npx wrangler secret put AI_API_KEY -c ${LOCAL_CONFIG_PATH}   # 如果你要启用 AI

@@ -34,7 +34,9 @@ export async function getSiteHeaderData(db: D1Database): Promise<{
         if (Array.isArray(parsed)) {
           navLinks = parsed
         }
-      } catch {}
+      } catch (error) {
+        console.warn('Unable to parse nav_links setting:', error)
+      }
     }
 
     categories = categoryRows

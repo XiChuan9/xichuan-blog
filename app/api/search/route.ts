@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAppCloudflareEnv } from '@/lib/cloudflare'
 import { searchPostsWithStrategy } from '@/lib/related-content'
+import { consumePersistentRateLimit, getRequestIp } from '@/lib/rate-limit'
+import { jsonRateLimitError } from '@/lib/server/route-helpers'
+
+const SEARCH_LIMIT = {
+  limit: 60,
+  windowMs: 60 * 1000,
+  blockMs: 5 * 60 * 1000,
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,6 +22,15 @@ export async function GET(req: NextRequest) {
 
     if (!env?.DB) {
       return NextResponse.json({ results: [] })
+    }
+
+    const rateLimit = await consumePersistentRateLimit(
+      env.DB,
+      `search:${getRequestIp(req.headers)}`,
+      SEARCH_LIMIT,
+    )
+    if (!rateLimit.allowed) {
+      return jsonRateLimitError(rateLimit.retryAfterSeconds)
     }
 
     const result = await searchPostsWithStrategy(env.DB, env, query.trim(), { limit: 50 })

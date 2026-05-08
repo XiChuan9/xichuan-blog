@@ -1,5 +1,10 @@
 # XiChuan Blog
 
+[English README](README.en.md) · [中文 README](README.md)
+
+[![CI](https://github.com/XiChuan9/xichuan-blog/actions/workflows/verify.yml/badge.svg)](https://github.com/XiChuan9/xichuan-blog/actions/workflows/verify.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/XiChuan9/xichuan-blog)
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/XiChuan9/xichuan-blog)
 [![Use this template](https://img.shields.io/badge/GitHub-Use%20this%20template-111111?logo=github)](https://github.com/XiChuan9/xichuan-blog/generate)
 
@@ -79,7 +84,7 @@ Vercel 环境变量至少配置：
 
 ```env
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
-ADMIN_PASSWORD=change-me
+ADMIN_PASSWORD_HASH=pbkdf2-sha256$...
 ADMIN_TOKEN_SALT=change-me-to-a-random-string
 AI_CONFIG_ENCRYPTION_SECRET=change-me-to-another-random-string
 
@@ -115,7 +120,7 @@ npm run verify:vercel
 部署时建议准备这些值：
 
 - `NEXT_PUBLIC_SITE_URL`
-- `ADMIN_PASSWORD`
+- `ADMIN_PASSWORD_HASH`
 - `ADMIN_TOKEN_SALT`
 - `AI_CONFIG_ENCRYPTION_SECRET`
 - `AI_API_KEY`（可选）
@@ -125,6 +130,7 @@ npm run verify:vercel
 ```bash
 npm install
 cp .env.example .env.local
+npm run password:hash -- "your-admin-password"
 npx wrangler login
 npm run cf:init -- --site-url=https://your-domain.com
 npm run deploy:cloudflare

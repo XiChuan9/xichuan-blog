@@ -27,6 +27,20 @@ type RuntimeEnv = {
 const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB (Cloudflare Workers limit)
 
 const BLOCKED_TYPES = new Set(['image/svg+xml'])
+const BLOCKED_EXTENSIONS = new Set([
+  'svg',
+  'html',
+  'htm',
+  'xhtml',
+  'xml',
+  'js',
+  'mjs',
+  'cjs',
+  'jsx',
+  'ts',
+  'tsx',
+  'css',
+])
 
 const ALLOWED_TYPES: Record<string, string[]> = {
   image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/heic', 'image/heif'],
@@ -40,8 +54,6 @@ const ALLOWED_TYPES: Record<string, string[]> = {
     'application/epub+zip',
     'application/x-mobipocket-ebook',
     'application/vnd.amazon.ebook',
-    'text/plain',
-    'application/octet-stream',
   ],
 }
 
@@ -69,7 +81,7 @@ function isBlockedUploadType(mimeType: string) {
 }
 
 function isBlockedUploadExtension(extension: string) {
-  return extension.trim().toLowerCase() === 'svg'
+  return BLOCKED_EXTENSIONS.has(extension.trim().toLowerCase())
 }
 
 function buildAssetUrls(encodedKey: string, cloudflareEnabled: boolean) {
@@ -115,7 +127,7 @@ export async function POST(req: NextRequest) {
 
     // Check allowed file types (allow unknown types with common extensions)
     const ext = file.name.split('.').pop()?.toLowerCase() || ''
-    const knownExts = ['zip', 'rar', '7z', 'epub', 'mobi', 'azw', 'azw3', 'pdf', 'txt', 'mp3', 'mp4', 'wav', 'ogg', 'webm', 'mov', 'flac', 'aac']
+    const knownExts = ['zip', 'rar', '7z', 'epub', 'mobi', 'azw', 'azw3', 'pdf', 'mp3', 'mp4', 'wav', 'ogg', 'webm', 'mov', 'flac', 'aac']
     if (isBlockedUploadType(file.type) || isBlockedUploadExtension(ext)) {
       return NextResponse.json({ error: '不支持的文件类型' }, { status: 400 })
     }
@@ -184,7 +196,6 @@ export async function POST(req: NextRequest) {
       else if (ext === 'epub') contentType = 'application/epub+zip'
       else if (ext === 'mobi') contentType = 'application/x-mobipocket-ebook'
       else if (ext === 'azw' || ext === 'azw3') contentType = 'application/vnd.amazon.ebook'
-      else if (ext === 'txt') contentType = 'text/plain'
     }
 
     await env.IMAGES.put(key, file, {

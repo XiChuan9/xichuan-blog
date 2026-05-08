@@ -1,5 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
+
+const rateLimitState = vi.hoisted(() => ({
+  counts: new Map<string, number>(),
+}))
 
 const mocks = vi.hoisted(() => ({
   getAppCloudflareEnv: vi.fn(),
@@ -16,8 +20,30 @@ vi.mock('@/lib/db', () => ({
   isPubliclyAccessiblePost: mocks.isPubliclyAccessiblePost,
 }))
 
+vi.mock('@/lib/rate-limit', () => ({
+  __resetRateLimitsForTests: () => rateLimitState.counts.clear(),
+  getRequestIp: () => '203.0.113.9',
+  checkPersistentRateLimit: async (_db: D1Database, key: string, options: { limit: number }) => {
+    const count = rateLimitState.counts.get(key) || 0
+    return count >= options.limit
+      ? { allowed: false, remaining: 0, retryAfterSeconds: 60 }
+      : { allowed: true, remaining: options.limit - count, retryAfterSeconds: 0 }
+  },
+  recordPersistentRateLimitFailure: async (_db: D1Database, key: string, options: { limit: number }) => {
+    const count = (rateLimitState.counts.get(key) || 0) + 1
+    rateLimitState.counts.set(key, count)
+    return count >= options.limit
+      ? { allowed: false, remaining: 0, retryAfterSeconds: 60 }
+      : { allowed: true, remaining: options.limit - count, retryAfterSeconds: 0 }
+  },
+  clearPersistentRateLimit: async (_db: D1Database, key: string) => {
+    rateLimitState.counts.delete(key)
+  },
+}))
+
 import { POST } from '@/app/api/posts/[slug]/unlock/route'
 import { __resetRateLimitsForTests } from '@/lib/rate-limit'
+import { hashPassword } from '@/lib/password'
 
 function createUnlockRequest(password: string) {
   return new NextRequest('https://blog.example.com/api/posts/secret-post/unlock', {
@@ -28,13 +54,19 @@ function createUnlockRequest(password: string) {
 }
 
 describe('/api/posts/[slug]/unlock route', () => {
+  let storedPassword = ''
+
+  beforeAll(async () => {
+    storedPassword = await hashPassword('stored-password')
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     __resetRateLimitsForTests()
     mocks.getAppCloudflareEnv.mockResolvedValue({ DB: { kind: 'db' } })
     mocks.getPostBySlug.mockResolvedValue({
       slug: 'secret-post',
-      password: 'stored-password',
+      password: storedPassword,
       status: 'published',
       is_hidden: 0,
     })

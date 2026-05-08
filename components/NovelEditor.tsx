@@ -595,7 +595,9 @@ export function NovelEditor({ initialData }: NovelEditorProps = {}) {
       try {
         const url = await uploadImageAndGetUrl(file)
         editorRef.current?.chain().focus().setImage({ src: url, alt: file.name }).run()
-      } catch {}
+      } catch (error) {
+        console.warn('Image upload fallback failed:', error)
+      }
       return
     }
     const editor = editorRef.current
@@ -609,7 +611,9 @@ export function NovelEditor({ initialData }: NovelEditorProps = {}) {
       insertUploadedFileIntoEditor(editor, file, result)
       scheduleDraftSave(latestTitleRef.current, editor)
     } catch (error) {
-      try { removeUploadPlaceholder(editor, marker) } catch {}
+      try { removeUploadPlaceholder(editor, marker) } catch (removeError) {
+        console.warn('Unable to remove upload placeholder:', removeError)
+      }
       setFeedback({ type: 'error', message: error instanceof Error ? error.message : '文件上传失败' })
     } finally {
       setUploadingImage(false); setUploadProgress(0)

@@ -23,12 +23,17 @@ describe('url security helpers', () => {
       'https://user:pass@api.example.com/v1',
       'https://localhost/v1',
       'https://127.0.0.1/v1',
+      'https://127.1/v1',
+      'https://2130706433/v1',
       'https://10.0.0.7/v1',
       'https://172.20.0.7/v1',
       'https://192.168.1.7/v1',
       'https://[::1]/v1',
+      'https://[::ffff:127.0.0.1]/v1',
       'https://[fd00::1]/v1',
       'https://metadata.google.internal.local/v1',
+      'https://127.0.0.1.nip.io/v1',
+      'https://localtest.me/v1',
     ]) {
       expect(normalizeSafeProviderBaseUrl(input).ok, input).toBe(false)
     }

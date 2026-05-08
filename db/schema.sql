@@ -225,6 +225,17 @@ CREATE TABLE IF NOT EXISTS api_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_api_tokens_token ON api_tokens(token);
 
+-- Persistent rate limits for multi-isolate runtimes
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key TEXT PRIMARY KEY,
+  count INTEGER NOT NULL,
+  reset_at INTEGER NOT NULL,
+  blocked_until INTEGER NOT NULL DEFAULT 0,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limits_expires ON rate_limits(reset_at, blocked_until);
+
 -- 插入默认分类
 INSERT OR IGNORE INTO categories (name, slug) VALUES
   ('未分类', 'uncategorized'),

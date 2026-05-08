@@ -39,6 +39,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       }
     }
-  } catch {}
+  } catch (error) {
+    console.warn('Unable to build dynamic sitemap entries:', error)
+  }
   return entries
 }

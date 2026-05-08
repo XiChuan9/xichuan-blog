@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { __resetRateLimitsForTests } from '@/lib/rate-limit'
 
+const rateLimitState = vi.hoisted(() => ({
+  counts: new Map<string, number>(),
+}))
+
 const mocks = vi.hoisted(() => ({
   createAdminSession: vi.fn(),
   getAdminAuthConfigError: vi.fn(),
@@ -23,6 +27,27 @@ vi.mock('@/lib/server/route-helpers', () => ({
     const response = Response.json({ error: message }, { status: 429 })
     response.headers.set('Retry-After', String(retryAfterSeconds))
     return response
+  },
+}))
+
+vi.mock('@/lib/rate-limit', () => ({
+  __resetRateLimitsForTests: () => rateLimitState.counts.clear(),
+  getRequestIp: (headers: Headers) => headers.get('cf-connecting-ip') || 'unknown',
+  checkPersistentRateLimit: async (_db: D1Database, key: string, options: { limit: number }) => {
+    const count = rateLimitState.counts.get(key) || 0
+    return count >= options.limit
+      ? { allowed: false, remaining: 0, retryAfterSeconds: 60 }
+      : { allowed: true, remaining: options.limit - count, retryAfterSeconds: 0 }
+  },
+  recordPersistentRateLimitFailure: async (_db: D1Database, key: string, options: { limit: number }) => {
+    const count = (rateLimitState.counts.get(key) || 0) + 1
+    rateLimitState.counts.set(key, count)
+    return count >= options.limit
+      ? { allowed: false, remaining: 0, retryAfterSeconds: 60 }
+      : { allowed: true, remaining: options.limit - count, retryAfterSeconds: 0 }
+  },
+  clearPersistentRateLimit: async (_db: D1Database, key: string) => {
+    rateLimitState.counts.delete(key)
   },
 }))
 

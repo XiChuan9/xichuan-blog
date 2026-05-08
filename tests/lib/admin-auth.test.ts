@@ -3,12 +3,12 @@ import type { NextRequest } from 'next/server'
 
 vi.mock('@/lib/cloudflare', () => ({
   getAppCloudflareEnv: vi.fn(async () => ({
-    ADMIN_PASSWORD: 'admin-password',
+    ADMIN_PASSWORD_HASH: 'pbkdf2-sha256$310000$x3kzgjFiK5lyBqJzWcRiBw$2RlfH7EdM17S3HpDz5g_9hi8l6tuxuZ8Y97tFEEGskQ',
     ADMIN_TOKEN_SALT: 'unit-test-salt',
   })),
 }))
 
-import { authenticateCookieRequest, verifyApiToken } from '@/lib/admin-auth'
+import { authenticateCookieRequest, authenticateRequest, verifyApiToken, verifyPassword } from '@/lib/admin-auth'
 
 describe('admin cookie authentication request checks', () => {
   it('rejects cross-origin cookie mutations before reading the admin cookie', async () => {
@@ -25,7 +25,12 @@ describe('admin cookie authentication request checks', () => {
     expect(cookieGet).not.toHaveBeenCalled()
   })
 
-  it('accepts legacy plaintext API tokens once and upgrades them to hashes', async () => {
+  it('verifies admin passwords against the configured hash', async () => {
+    await expect(verifyPassword('admin-password')).resolves.toBe(true)
+    await expect(verifyPassword('wrong-password')).resolves.toBe(false)
+  })
+
+  it('rejects legacy plaintext API tokens instead of upgrading them', async () => {
     const updates: Array<{ sql: string; args: unknown[] }> = []
     const db = {
       prepare: vi.fn((sql: string) => ({
@@ -43,12 +48,28 @@ describe('admin cookie authentication request checks', () => {
       })),
     } as unknown as D1Database
 
-    await expect(verifyApiToken(db, 'xc_legacy_token')).resolves.toBe(true)
+    await expect(verifyApiToken(db, 'xc_legacy_token')).resolves.toBe(false)
 
-    expect(updates).toHaveLength(1)
-    expect(updates[0].sql).toContain('SET token = ?')
-    expect(updates[0].args[0]).not.toBe('xc_legacy_token')
-    expect(updates[0].args[1]).toBe('xc_legacy_...')
-    expect(updates[0].args[2]).toBe(9)
+    expect(updates).toHaveLength(0)
+  })
+
+  it('rejects bearer token mutations from untrusted browser origins', async () => {
+    const request = {
+      method: 'POST',
+      url: 'https://blog.example.com/api/posts',
+      nextUrl: new URL('https://blog.example.com/api/posts'),
+      headers: new Headers({
+        Authorization: 'Bearer xc_token',
+        Origin: 'https://evil.example',
+      }),
+      cookies: { get: vi.fn() },
+    } as unknown as NextRequest
+
+    const db = {
+      prepare: vi.fn(),
+    } as unknown as D1Database
+
+    await expect(authenticateRequest(request, db)).resolves.toBe(false)
+    expect(db.prepare).not.toHaveBeenCalled()
   })
 })

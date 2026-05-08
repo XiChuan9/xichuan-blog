@@ -23,6 +23,27 @@ const ALLOWED_TAGS = [
 const COLOR_VALUE = /^#[0-9a-f]{3,8}$|^rgb(a)?\([\d\s.,%]+\)$|^[a-z]+$/i
 const LENGTH_VALUE = /^\d{1,4}(px|em|rem|%)?$/
 const ALIGN_VALUE = /^(left|right|center|justify)$/
+const ALLOWED_IFRAME_FEATURES = new Set([
+  'accelerometer',
+  'autoplay',
+  'clipboard-write',
+  'encrypted-media',
+  'fullscreen',
+  'gyroscope',
+  'picture-in-picture',
+  'web-share',
+])
+
+function sanitizeIframeAllow(value: string | undefined): string | undefined {
+  if (!value) return undefined
+
+  const features = value
+    .split(';')
+    .map((part) => part.trim().split(/\s+/)[0]?.toLowerCase())
+    .filter((feature): feature is string => Boolean(feature && ALLOWED_IFRAME_FEATURES.has(feature)))
+
+  return [...new Set(features)].join('; ') || undefined
+}
 
 export function sanitizeArticleHtml(html: string): string {
   return sanitizeHtml(html || '', {
@@ -77,6 +98,19 @@ export function sanitizeArticleHtml(html: string): string {
           rel: attribs.target === '_blank' ? 'noopener noreferrer' : attribs.rel,
         },
       }),
+      iframe: (tagName, attribs) => {
+        const nextAttribs = { ...attribs }
+        const allow = sanitizeIframeAllow(attribs.allow)
+
+        if (allow) {
+          nextAttribs.allow = allow
+        } else {
+          delete nextAttribs.allow
+        }
+
+        nextAttribs.loading = nextAttribs.loading === 'eager' ? 'eager' : 'lazy'
+        return { tagName, attribs: nextAttribs }
+      },
     },
   })
 }

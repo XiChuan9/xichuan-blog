@@ -1,3 +1,6 @@
+import { hashSecret, verifySecret, isPasswordHash } from '@/lib/secure-password'
+export { isPasswordHash } from '@/lib/secure-password'
+
 const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
 const DIGITS = '23456789'
 const SYMBOLS = 'abcdefghijkmnopqrstuvwxyz'
@@ -38,10 +41,6 @@ export function generatePassword(): string {
   return shuffle(chars).join('')
 }
 
-// 密码哈希（SHA-256 + 固定盐）
-// 注意：这是简化方案，生产环境建议使用 bcrypt/argon2
-const SALT = 'xichuan-blog_salt_v1' // 固定盐，可以移到环境变量
-
 async function sha256Hex(input: string): Promise<string> {
   const encoder = new TextEncoder()
   const data = encoder.encode(input)
@@ -51,15 +50,24 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  return sha256Hex(SALT + password)
+  return hashSecret(password)
 }
 
-// 验证密码：优先兼容当前明文存储，同时兼容历史哈希值
 export async function verifyPassword(input: string, stored: string): Promise<boolean> {
-  if (input === stored) return true
-  if (await hashPassword(input) === stored) return true
-  if (await sha256Hex(input) === stored) return true // 兼容更早的无盐哈希
-  return false
+  return verifySecret(input, stored)
+}
+
+export async function preparePostPasswordForStorage(
+  password: string | null | undefined,
+): Promise<string | null | undefined> {
+  if (password === undefined) return undefined
+  if (password === null) return null
+
+  const trimmed = password.trim()
+  if (!trimmed) return null
+  if (isPasswordHash(trimmed)) return trimmed
+
+  return hashPassword(trimmed)
 }
 
 export function getPostAccessCookieName(slug: string): string {

@@ -9,10 +9,10 @@ import {
   verifyPassword,
 } from '@/lib/password'
 import {
-  checkRateLimit,
-  clearRateLimit,
+  checkPersistentRateLimit,
+  clearPersistentRateLimit,
   getRequestIp,
-  recordRateLimitFailure,
+  recordPersistentRateLimitFailure,
 } from '@/lib/rate-limit'
 
 type Ctx = { params: Promise<{ slug: string }> }
@@ -25,15 +25,15 @@ const POST_UNLOCK_LIMIT = {
 
 export async function POST(req: NextRequest, { params }: Ctx) {
   const { slug } = await params
-  const rateLimitKey = `post-unlock:${slug}:${getRequestIp(req.headers)}`
-  const rateLimit = checkRateLimit(rateLimitKey, POST_UNLOCK_LIMIT)
-  if (!rateLimit.allowed) {
-    return jsonRateLimitError(rateLimit.retryAfterSeconds)
-  }
-
   const env = await getAppCloudflareEnv().catch(() => null)
   if (!env?.DB) {
     return NextResponse.json({ error: '数据库未配置' }, { status: 500 })
+  }
+
+  const rateLimitKey = `post-unlock:${slug}:${getRequestIp(req.headers)}`
+  const rateLimit = await checkPersistentRateLimit(env.DB, rateLimitKey, POST_UNLOCK_LIMIT)
+  if (!rateLimit.allowed) {
+    return jsonRateLimitError(rateLimit.retryAfterSeconds)
   }
 
   let body: { password?: string }
@@ -53,14 +53,14 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
   const password = (body.password || '').trim()
   if (!password || !(await verifyPassword(password, post.password))) {
-    const failureLimit = recordRateLimitFailure(rateLimitKey, POST_UNLOCK_LIMIT)
+    const failureLimit = await recordPersistentRateLimitFailure(env.DB, rateLimitKey, POST_UNLOCK_LIMIT)
     if (!failureLimit.allowed) {
       return jsonRateLimitError(failureLimit.retryAfterSeconds)
     }
     return NextResponse.json({ error: '密码错误，请重试' }, { status: 401 })
   }
 
-  clearRateLimit(rateLimitKey)
+  await clearPersistentRateLimit(env.DB, rateLimitKey)
 
   const token = await createPostAccessToken(post.slug, post.password)
   const response = NextResponse.json({ success: true })

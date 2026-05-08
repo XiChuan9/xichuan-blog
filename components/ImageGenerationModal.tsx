@@ -202,7 +202,9 @@ export function ImageGenerationModal({
         historyStorageKey,
         JSON.stringify(historyItems.slice(0, MAX_HISTORY_ITEMS)),
       )
-    } catch {}
+    } catch (error) {
+      console.warn('Unable to persist image generation history:', error)
+    }
   }, [historyItems, historyReady, historyStorageKey])
 
   useEffect(() => {

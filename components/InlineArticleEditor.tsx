@@ -250,7 +250,9 @@ export function InlineArticleEditor({
         const url = await uploadImageAndGetUrl(file)
         const editor = editorRef.current
         if (editor) editor.chain().focus().setImage({ src: url, alt: file.name }).run()
-      } catch { /* error already shown via feedback */ }
+      } catch (error) {
+        console.warn('Image upload fallback failed:', error)
+      }
       return
     }
 
@@ -278,7 +280,9 @@ export function InlineArticleEditor({
     } catch (error) {
       console.error(error)
       // 移除占位符
-      try { removeUploadPlaceholder(editor, placeholderMarker) } catch {}
+      try { removeUploadPlaceholder(editor, placeholderMarker) } catch (removeError) {
+        console.warn('Unable to remove upload placeholder:', removeError)
+      }
       setFeedback({
         type: 'error',
         message: error instanceof Error ? error.message : '文件上传失败',

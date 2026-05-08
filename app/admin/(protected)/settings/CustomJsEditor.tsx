@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { getSafeCustomScriptSources } from '@/lib/custom-js'
 
 interface Props {
   initialValue: string
@@ -10,6 +11,7 @@ interface Props {
 
 export function CustomJsEditor({ initialValue, onSave, saving }: Props) {
   const [code, setCode] = useState(initialValue)
+  const safeSources = getSafeCustomScriptSources(code)
 
   return (
     <div className="space-y-3">
@@ -18,8 +20,16 @@ export function CustomJsEditor({ initialValue, onSave, saving }: Props) {
         onChange={(e) => setCode(e.target.value)}
         rows={8}
         className="w-full rounded-lg border border-[var(--editor-line)] bg-[var(--background)] p-3 font-mono text-sm text-[var(--editor-ink)] placeholder:text-[var(--editor-muted)] outline-none focus:border-[var(--editor-accent)] transition-colors resize-y"
-        placeholder={'<script>\n  // 在此粘贴统计代码\n</script>'}
+        placeholder={'<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXX"></script>'}
       />
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+        只会加载受信任统计域名的 HTTPS 外链脚本；内联 JavaScript 和任意 HTML 会被忽略。
+        {safeSources.length > 0 && (
+          <div className="mt-1 font-mono text-[11px] text-amber-800">
+            将加载 {safeSources.length} 个脚本
+          </div>
+        )}
+      </div>
       <button
         onClick={() => onSave(code)}
         disabled={saving}

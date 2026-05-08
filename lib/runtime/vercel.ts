@@ -42,6 +42,7 @@ export async function getVercelRuntimeContext(): Promise<AppRuntimeContext> {
     DB: turso ? createTursoD1Database(turso) : undefined,
     IMAGES: hasVercelBlobConfig() ? createVercelBlobBucket() : undefined,
     WORKERS_AI: accountId && apiToken ? createWorkersAiRestBinding({ accountId, apiToken }) : undefined,
+    ADMIN_PASSWORD_HASH: getProcessEnvValue('ADMIN_PASSWORD_HASH'),
     ADMIN_PASSWORD: getProcessEnvValue('ADMIN_PASSWORD'),
     ADMIN_TOKEN_SALT: getProcessEnvValue('ADMIN_TOKEN_SALT'),
     AI_CONFIG_ENCRYPTION_SECRET: getProcessEnvValue('AI_CONFIG_ENCRYPTION_SECRET'),

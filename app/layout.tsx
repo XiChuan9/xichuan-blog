@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     default: 'XiChuan Blog',
     template: '%s · XiChuan Blog',
   },
-  description: '记录思考，分享所学，留住当下。技术、生活、读书笔记的数字花园。',
+  description: 'A personal knowledge garden for essays, notes, technology, reading, and everyday observations.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -62,11 +62,11 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: 'website',
-    locale: 'zh_CN',
+    locale: 'en_US',
     url: SITE_URL,
     siteName: 'XiChuan Blog',
     title: 'XiChuan Blog',
-    description: '记录思考，分享所学，留住当下。技术、生活、读书笔记的数字花园。',
+    description: 'A personal knowledge garden for essays, notes, technology, reading, and everyday observations.',
     images: [
       {
         url: DEFAULT_SITE_OG_IMAGE,
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
     site: '@vista8',
     creator: '@vista8',
     title: 'XiChuan Blog',
-    description: '记录思考，分享所学，留住当下。技术、生活、读书笔记的数字花园。',
+    description: 'A personal knowledge garden for essays, notes, technology, reading, and everyday observations.',
     images: [DEFAULT_SITE_OG_IMAGE],
   },
 };
@@ -106,7 +106,9 @@ export default async function RootLayout({
       bodyFont = bodyFontValue || ''
       defaultTheme = normalizeTheme(defaultThemeValue)
     }
-  } catch {}
+  } catch (error) {
+    console.warn('Unable to load site appearance settings:', error)
+  }
 
   const font = FONT_CONFIG[bodyFont]
   const validThemes = THEME_OPTIONS.map((theme) => theme.id)

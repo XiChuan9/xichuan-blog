@@ -4,33 +4,46 @@
 import { nanoid } from 'nanoid'
 import { NextRequest } from 'next/server'
 import { getAppCloudflareEnv } from '@/lib/cloudflare'
+import { isPasswordHash, verifySecret } from '@/lib/secure-password'
 
 interface AdminAuthConfig {
-  password: string
+  passwordHash: string
   salt: string
 }
 
 async function getAdminAuthConfig(): Promise<AdminAuthConfig> {
-  let envPassword = ''
+  let envPasswordHash = ''
+  let legacyEnvPassword = ''
   let envSalt = ''
 
   try {
     const env = await getAppCloudflareEnv()
-    envPassword = env?.ADMIN_PASSWORD?.trim() || ''
+    envPasswordHash = env?.ADMIN_PASSWORD_HASH?.trim() || ''
+    legacyEnvPassword = env?.ADMIN_PASSWORD?.trim() || ''
     envSalt = env?.ADMIN_TOKEN_SALT?.trim() || ''
-  } catch {}
+  } catch (error) {
+    console.warn('Unable to read Cloudflare admin auth config:', error)
+  }
+
+  const processPasswordHash = process.env.ADMIN_PASSWORD_HASH?.trim() || ''
+  const processLegacyPassword = process.env.ADMIN_PASSWORD?.trim() || ''
+  const passwordHash =
+    envPasswordHash
+    || processPasswordHash
+    || (isPasswordHash(legacyEnvPassword) ? legacyEnvPassword : '')
+    || (isPasswordHash(processLegacyPassword) ? processLegacyPassword : '')
 
   return {
-    password: envPassword || process.env.ADMIN_PASSWORD?.trim() || '',
+    passwordHash,
     salt: envSalt || process.env.ADMIN_TOKEN_SALT?.trim() || '',
   }
 }
 
 export async function getAdminAuthConfigError(): Promise<string | null> {
-  const { password, salt } = await getAdminAuthConfig()
+  const { passwordHash, salt } = await getAdminAuthConfig()
   const missing: string[] = []
 
-  if (!password) missing.push('ADMIN_PASSWORD')
+  if (!passwordHash) missing.push('ADMIN_PASSWORD_HASH')
   if (!salt) missing.push('ADMIN_TOKEN_SALT')
 
   if (missing.length === 0) return null
@@ -42,7 +55,7 @@ export async function isAdminAuthConfigured(): Promise<boolean> {
 }
 
 export const COOKIE_NAME = 'xichuan-blog_admin'
-export const COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 天
+export const COOKIE_MAX_AGE = 60 * 60 * 24 * 7 // 7 天
 const SESSION_TOKEN_PREFIX = 'xcs_'
 
 interface AdminSessionRow {
@@ -117,11 +130,11 @@ export async function revokeAdminSession(db: D1Database, cookieValue: string | u
  * 同一实例永远返回相同值，可安全用于 cookie 比对
  */
 export async function getSessionToken(): Promise<string> {
-  const { password, salt } = await getAdminAuthConfig()
-  if (!password || !salt) return ''
+  const { passwordHash, salt } = await getAdminAuthConfig()
+  if (!passwordHash || !salt) return ''
 
   const encoder = new TextEncoder()
-  const data = encoder.encode(`${password}:${salt}`)
+  const data = encoder.encode(`${passwordHash}:${salt}`)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
@@ -130,7 +143,7 @@ export async function getSessionToken(): Promise<string> {
 /** 校验密码是否正确 */
 export async function verifyPassword(password: string): Promise<boolean> {
   const config = await getAdminAuthConfig()
-  return Boolean(config.password) && password === config.password
+  return Boolean(config.passwordHash) && verifySecret(password, config.passwordHash)
 }
 
 /** 从请求 cookie 中校验 admin 会话 */
@@ -193,27 +206,13 @@ export async function verifyApiToken(db: D1Database, token: string): Promise<boo
       .bind(tokenHash)
       .first<ApiTokenRow>()
     if (row?.is_active) {
-      markApiTokenUsed(db, row.id).catch(() => {})
+      markApiTokenUsed(db, row.id).catch((error) => {
+        console.warn('Unable to update API token last_used_at:', error)
+      })
       return true
     }
 
-    const legacyRow = await db
-      .prepare('SELECT id, is_active FROM api_tokens WHERE token = ?')
-      .bind(token)
-      .first<ApiTokenRow>()
-    if (!legacyRow?.is_active) return false
-
-    const tokenPreview = `${token.slice(0, 10)}...`
-    db.prepare(`
-      UPDATE api_tokens
-      SET token = ?,
-          token_preview = COALESCE(NULLIF(token_preview, ''), ?),
-          last_used_at = strftime('%s', 'now')
-      WHERE id = ?
-    `).bind(tokenHash, tokenPreview, legacyRow.id).run().catch(() => {
-      markApiTokenUsed(db, legacyRow.id).catch(() => {})
-    })
-    return true
+    return false
   } catch {
     return false
   }
@@ -230,6 +229,7 @@ export async function authenticateRequest(
   // 1. 先检查 Bearer Token
   const authHeader = req.headers.get('Authorization')
   if (authHeader?.startsWith('Bearer ') && db) {
+    if (!isSafeCrossOriginRequest(req)) return false
     const token = authHeader.slice(7)
     return await verifyApiToken(db, token)
   }
@@ -246,7 +246,7 @@ export async function authenticateCookieRequest(
   req: NextRequest,
   db?: D1Database,
 ): Promise<boolean> {
-  if (!isSafeCookieMutationRequest(req)) return false
+  if (!isSafeCrossOriginRequest(req, true)) return false
   const cookieValue = req.cookies?.get(COOKIE_NAME)?.value
   return await isAdminAuthenticated(cookieValue, db)
 }
@@ -273,8 +273,8 @@ function getAllowedOrigins(req: NextRequest) {
   return origins
 }
 
-function isSafeCookieMutationRequest(req: NextRequest) {
-  if (!isUnsafeMethod(req.method)) return true
+function isSafeCrossOriginRequest(req: NextRequest, unsafeMethodsOnly = false) {
+  if (unsafeMethodsOnly && !isUnsafeMethod(req.method)) return true
 
   const allowed = getAllowedOrigins(req)
   const origin = normalizeOrigin(req.headers.get('Origin'))

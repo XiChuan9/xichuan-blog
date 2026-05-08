@@ -13,6 +13,23 @@ vi.mock('@/lib/related-content', () => ({
   searchPostsWithStrategy: mocks.searchPostsWithStrategy,
 }))
 
+vi.mock('@/lib/rate-limit', () => ({
+  getRequestIp: () => '203.0.113.9',
+  consumePersistentRateLimit: vi.fn(async () => ({
+    allowed: true,
+    remaining: 59,
+    retryAfterSeconds: 0,
+  })),
+}))
+
+vi.mock('@/lib/server/route-helpers', () => ({
+  jsonRateLimitError: (retryAfterSeconds: number, message = '请求过于频繁，请稍后再试') => {
+    const response = Response.json({ error: message }, { status: 429 })
+    response.headers.set('Retry-After', String(retryAfterSeconds))
+    return response
+  },
+}))
+
 import { GET } from '@/app/api/search/route'
 
 describe('/api/search route', () => {

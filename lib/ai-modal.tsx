@@ -229,7 +229,9 @@ export function AIModal({
         historyStorageKey,
         JSON.stringify(historyItems.slice(0, MAX_HISTORY_ITEMS)),
       )
-    } catch {}
+    } catch (error) {
+      console.warn('Unable to persist AI action history:', error)
+    }
   }, [historyItems, historyReady, historyStorageKey])
 
   useEffect(() => {
@@ -406,7 +408,9 @@ export function AIModal({
       await navigator.clipboard.writeText(normalized)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch {}
+    } catch (error) {
+      console.warn('Unable to copy AI output:', error)
+    }
   }
 
   if (!isOpen || !position) return null

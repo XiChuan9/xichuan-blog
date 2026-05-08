@@ -8,10 +8,10 @@ import {
 } from '@/lib/admin-auth'
 import { getRouteEnvWithDb, jsonRateLimitError } from '@/lib/server/route-helpers'
 import {
-  checkRateLimit,
-  clearRateLimit,
+  clearPersistentRateLimit,
   getRequestIp,
-  recordRateLimitFailure,
+  recordPersistentRateLimitFailure,
+  checkPersistentRateLimit,
 } from '@/lib/rate-limit'
 
 const ADMIN_LOGIN_LIMIT = {
@@ -27,8 +27,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: configError }, { status: 503 })
     }
 
+    const route = await getRouteEnvWithDb('数据库未配置，无法创建管理员会话')
+    if (!route.ok) return route.response
+
     const rateLimitKey = `admin-login:${getRequestIp(req.headers)}`
-    const rateLimit = checkRateLimit(rateLimitKey, ADMIN_LOGIN_LIMIT)
+    const rateLimit = await checkPersistentRateLimit(route.db, rateLimitKey, ADMIN_LOGIN_LIMIT)
     if (!rateLimit.allowed) {
       return jsonRateLimitError(rateLimit.retryAfterSeconds)
     }
@@ -42,17 +45,14 @@ export async function POST(req: NextRequest) {
     const { password } = body
 
     if (!password || !(await verifyPassword(password))) {
-      const failureLimit = recordRateLimitFailure(rateLimitKey, ADMIN_LOGIN_LIMIT)
+      const failureLimit = await recordPersistentRateLimitFailure(route.db, rateLimitKey, ADMIN_LOGIN_LIMIT)
       if (!failureLimit.allowed) {
         return jsonRateLimitError(failureLimit.retryAfterSeconds)
       }
       return NextResponse.json({ error: '密码错误' }, { status: 401 })
     }
 
-    clearRateLimit(rateLimitKey)
-
-    const route = await getRouteEnvWithDb('数据库未配置，无法创建管理员会话')
-    if (!route.ok) return route.response
+    await clearPersistentRateLimit(route.db, rateLimitKey)
 
     const token = await createAdminSession(route.db, {
       userAgent: req.headers.get('user-agent') || '',

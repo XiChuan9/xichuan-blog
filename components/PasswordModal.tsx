@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { useToast } from './Toast'
-import { generatePassword } from '@/lib/password'
+import { generatePassword, isPasswordHash } from '@/lib/password'
 
 interface PasswordModalProps {
   isOpen: boolean
@@ -23,14 +23,17 @@ export function PasswordModal({
   onSuccess,
 }: PasswordModalProps) {
   const [password, setPassword] = useState(currentPassword || '')
+  const [hasHiddenPassword, setHasHiddenPassword] = useState(isPasswordHash(currentPassword))
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState<'url' | 'password' | null>(null)
   const toast = useToast()
 
-  const isEncrypted = !!currentPassword
+  const isEncrypted = !!currentPassword || hasHiddenPassword
 
   useEffect(() => {
     if (!isOpen) return
+    setPassword(isPasswordHash(currentPassword) ? '' : currentPassword || '')
+    setHasHiddenPassword(isPasswordHash(currentPassword))
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -38,7 +41,7 @@ export function PasswordModal({
 
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, onClose])
+  }, [currentPassword, isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -59,13 +62,41 @@ export function PasswordModal({
 
       if (newPassword) {
         setPassword(newPassword)
+        setHasHiddenPassword(false)
         toast.success('已启用密码保护')
       } else {
         setPassword('')
+        setHasHiddenPassword(false)
         toast.success('已取消密码保护')
         onClose()
       }
 
+      onSuccess()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '操作失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResetPassword = async () => {
+    setLoading(true)
+    try {
+      const newPassword = generatePassword()
+
+      const response = await fetch(`/api/admin/posts/${slug}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
+      })
+
+      if (!response.ok) {
+        throw new Error('密码重置失败')
+      }
+
+      setPassword(newPassword)
+      setHasHiddenPassword(false)
+      toast.success('已重置访问密码')
       onSuccess()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '操作失败')
@@ -115,26 +146,32 @@ export function PasswordModal({
         <div className="px-6 pb-6 space-y-4">
           {isEncrypted ? (
             <>
-              <div>
-                <label className="block text-xs font-medium text-[var(--editor-muted)] mb-2">
-                  访问密码
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={password}
-                    readOnly
-                    className="flex-1 px-3 py-2 text-sm rounded-md border border-[var(--editor-line)] bg-[var(--editor-soft)] text-[var(--editor-ink)]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(password, 'password')}
-                    className="px-3 py-2 text-sm rounded-md border border-[var(--editor-line)] bg-[var(--background)] text-[var(--editor-ink)] hover:bg-[var(--editor-soft)] transition-colors"
-                  >
-                    {copied === 'password' ? '✓' : '复制'}
-                  </button>
+              {hasHiddenPassword ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  已启用密码保护。为避免明文泄露，当前访问密码不会再次显示；需要分享时请重置访问密码。
+                </p>
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-[var(--editor-muted)] mb-2">
+                    访问密码
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={password}
+                      readOnly
+                      className="flex-1 px-3 py-2 text-sm rounded-md border border-[var(--editor-line)] bg-[var(--editor-soft)] text-[var(--editor-ink)]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(password, 'password')}
+                      className="px-3 py-2 text-sm rounded-md border border-[var(--editor-line)] bg-[var(--background)] text-[var(--editor-ink)] hover:bg-[var(--editor-soft)] transition-colors"
+                    >
+                      {copied === 'password' ? '✓' : '复制'}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-[var(--editor-muted)] mb-2">
@@ -167,6 +204,14 @@ export function PasswordModal({
                 className="w-full px-4 py-2 text-sm font-medium text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 transition-colors disabled:opacity-50"
               >
                 {loading ? '处理中...' : '取消密码保护'}
+              </button>
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={loading}
+                className="w-full px-4 py-2 text-sm font-medium text-[var(--editor-ink)] border border-[var(--editor-line)] rounded-lg hover:bg-[var(--editor-soft)] transition-colors disabled:opacity-50"
+              >
+                {loading ? '处理中...' : '重置访问密码'}
               </button>
             </>
           ) : (

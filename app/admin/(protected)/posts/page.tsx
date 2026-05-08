@@ -35,7 +35,9 @@ export default async function AdminPostsPage({
     try {
       const cats = await getCategories(env.DB)
       dbCategories = cats.map(c => c.name).filter(n => n !== '未分类')
-    } catch {}
+    } catch (error) {
+      console.error('Categories fetch error:', error)
+    }
   }
 
   // 从文章数据提取分类（用于 FilterBar 筛选）

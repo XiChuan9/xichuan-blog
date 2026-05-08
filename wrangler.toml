@@ -47,7 +47,7 @@ WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
 # ENABLE_CF_IMAGE_PIPELINE = "true"
 
 # Secrets（通过 wrangler secret put 设置）：
-# - ADMIN_PASSWORD
+# - ADMIN_PASSWORD_HASH
 # - ADMIN_TOKEN_SALT
 # - AI_CONFIG_ENCRYPTION_SECRET
 # - AI_API_KEY

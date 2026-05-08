@@ -117,7 +117,7 @@ export function SettingsManager({
             </div>
           )}
           <p className="text-sm text-[var(--editor-muted)]">
-            此代码会注入到所有页面的 &lt;head&gt; 中，适合添加统计代码（如 Google Analytics、百度统计等）。
+            此处适合添加 Google Analytics、百度统计等第三方统计脚本的 HTTPS 外链。
           </p>
           <CustomJsEditor
             initialValue={initialCustomJs}

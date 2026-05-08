@@ -32,8 +32,6 @@ const ALLOWED_TYPES = [
   'application/epub+zip',
   'application/x-mobipocket-ebook',
   'application/vnd.amazon.ebook',
-  'application/octet-stream',
-  'text/plain',
 ]
 
 function isSafeUploadPath(pathname: string) {
@@ -49,7 +47,8 @@ function isAllowedClientPayload(body: HandleUploadBody) {
 
   try {
     const parsed = JSON.parse(payload) as { contentType?: string }
-    return parsed.contentType?.trim().toLowerCase() !== 'image/svg+xml'
+    const contentType = parsed.contentType?.trim().toLowerCase()
+    return Boolean(contentType && ALLOWED_TYPES.includes(contentType))
   } catch {
     return false
   }

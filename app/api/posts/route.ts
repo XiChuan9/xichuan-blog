@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm'
 import remarkHtml from 'remark-html'
 import { buildAutoDescription, normalizePostSlug } from '@/lib/post-utils'
 import { sanitizeArticleHtml } from '@/lib/html-sanitize'
+import { preparePostPasswordForStorage } from '@/lib/password'
 import {
   ensureAuthenticatedRequest,
   getRouteContextWithDb,
@@ -34,7 +35,9 @@ export async function POST(req: NextRequest) {
     const payloadCategory = typeof payload.category === 'string' ? payload.category.trim() : ''
     const customSlug = typeof payload.slug === 'string' ? normalizePostSlug(payload.slug) : ''
     const status = payload.status === 'draft' ? 'draft' : 'published'
-    const password = typeof payload.password === 'string' && payload.password.trim() ? payload.password.trim() : null
+    const password = await preparePostPasswordForStorage(
+      typeof payload.password === 'string' ? payload.password : null,
+    )
     const is_hidden = payload.is_hidden === 1 ? 1 : 0
     const description = typeof payload.description === 'string' && payload.description.trim()
       ? payload.description.trim()
@@ -64,7 +67,7 @@ export async function POST(req: NextRequest) {
       (
         await remark()
           .use(remarkGfm)
-          .use(remarkHtml, { sanitize: false })
+          .use(remarkHtml, { sanitize: true })
           .process(content)
       ).toString(),
     )
@@ -167,6 +170,12 @@ export async function PATCH(req: NextRequest) {
     if (payload.category !== undefined) updates.category = payload.category
     if (payload.tags !== undefined) updates.tags = payload.tags
     if (payload.cover_image !== undefined) updates.cover_image = payload.cover_image
+    if (payload.password !== undefined) {
+      updates.password = await preparePostPasswordForStorage(
+        typeof payload.password === 'string' ? payload.password : null,
+      )
+    }
+    if (payload.is_hidden !== undefined) updates.is_hidden = payload.is_hidden === 1 ? 1 : 0
     if (payload.status === 'draft' || payload.status === 'published' || payload.status === 'deleted') {
       updates.status = payload.status
     }

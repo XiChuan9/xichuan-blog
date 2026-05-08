@@ -28,8 +28,8 @@ else
   echo "==> preview mode: local runtime with binding modes from ${CONFIG_PATH}"
   echo "==> note: bindings marked remote in Wrangler will use live resources; other bindings still use local state"
 
-  if [[ ! -f "${REPO_ROOT}/.dev.vars" && ( -z "${ADMIN_PASSWORD:-}" || -z "${ADMIN_TOKEN_SALT:-}" ) ]]; then
-    echo "==> warning: ADMIN_PASSWORD / ADMIN_TOKEN_SALT are not set in the local shell"
+  if [[ ! -f "${REPO_ROOT}/.dev.vars" && ( -z "${ADMIN_PASSWORD_HASH:-}" || -z "${ADMIN_TOKEN_SALT:-}" ) ]]; then
+    echo "==> warning: ADMIN_PASSWORD_HASH / ADMIN_TOKEN_SALT are not set in the local shell"
     echo "==> admin login will return 503 in local preview unless you provide these secrets via env or .dev.vars"
   fi
 fi

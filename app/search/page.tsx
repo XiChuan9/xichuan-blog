@@ -8,12 +8,12 @@ import { getSiteHeaderData } from '@/lib/site'
 import type { Theme } from '@/lib/appearance'
 
 export const metadata = {
-  title: '搜索结果',
+  title: 'Search',
   robots: { index: false, follow: true },
 }
 
 function formatDate(ts: number) {
-  return new Date(ts * 1000).toLocaleDateString('zh-CN', {
+  return new Date(ts * 1000).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -62,15 +62,15 @@ export default async function SearchPage({
       <main className="page-main flex-1 mx-auto max-w-3xl w-full px-4 sm:px-6 py-10 sm:py-14">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-[var(--editor-ink)] mb-2">
-            搜索结果
+            Search
           </h1>
           {query ? (
             <p className="text-sm text-[var(--editor-muted)]">
-              关键词 &quot;{query}&quot; 找到 {posts.length} 篇文章
+              {posts.length} result{posts.length === 1 ? '' : 's'} for &quot;{query}&quot;
             </p>
           ) : (
             <p className="text-sm text-[var(--editor-muted)]">
-              请输入搜索关键词
+              Enter a search term.
             </p>
           )}
         </div>
@@ -83,8 +83,8 @@ export default async function SearchPage({
                 <path d="m21 21-4.35-4.35"></path>
               </svg>
             </div>
-            <p className="text-[var(--editor-muted)] mb-2">未找到相关文章</p>
-            <p className="text-sm text-[var(--stone-gray)]">试试其他关键词</p>
+            <p className="text-[var(--editor-muted)] mb-2">No matching posts found</p>
+            <p className="text-sm text-[var(--stone-gray)]">Try another keyword.</p>
           </div>
         ) : query ? (
           <div className="space-y-0">

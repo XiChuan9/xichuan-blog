@@ -66,6 +66,7 @@ declare interface CloudflareEnv {
   BACKGROUND_QUEUE?: QueueBinding
   WORKERS_AI?: WorkersAIBinding
   VECTOR_INDEX?: VectorizeIndex
+  ADMIN_PASSWORD_HASH?: string
   ADMIN_PASSWORD?: string
   ADMIN_TOKEN_SALT?: string
   AI_CONFIG_ENCRYPTION_SECRET?: string

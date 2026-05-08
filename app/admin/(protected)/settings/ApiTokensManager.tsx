@@ -34,7 +34,9 @@ export function ApiTokensManager() {
         const data = (await res.json()) as TokensResponse
         setTokens(data.tokens)
       }
-    } catch {}
+    } catch (error) {
+      console.error('Failed to load API tokens:', error)
+    }
   }
 
   useEffect(() => { loadTokens() }, [])

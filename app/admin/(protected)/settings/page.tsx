@@ -23,7 +23,9 @@ export default async function SettingsPage() {
       defaultTheme = (await getSetting(env.DB, 'default_theme')) || ''
       categories = await getCategories(env.DB)
     }
-  } catch {}
+  } catch (error) {
+    console.error('Settings fetch error:', error)
+  }
 
   return (
     <div className="space-y-6">

@@ -1,5 +1,7 @@
 # 部署指南
 
+[English deployment guide](DEPLOY.en.md) · [中文部署指南](DEPLOY.md)
+
 XiChuan Blog 支持两条平行部署路径：
 
 - `Vercel + Turso/libSQL + Vercel Blob`
@@ -33,7 +35,7 @@ Vercel Project 至少配置：
 
 ```env
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
-ADMIN_PASSWORD=change-me
+ADMIN_PASSWORD_HASH=pbkdf2-sha256$...
 ADMIN_TOKEN_SALT=change-me-to-a-random-string
 AI_CONFIG_ENCRYPTION_SECRET=change-me-to-another-random-string
 TURSO_DATABASE_URL=libsql://...
@@ -98,7 +100,7 @@ cp .env.example .env.local
 至少填写：
 
 ```env
-ADMIN_PASSWORD=change-me
+ADMIN_PASSWORD_HASH=pbkdf2-sha256$...
 ADMIN_TOKEN_SALT=change-me-to-a-random-string
 AI_CONFIG_ENCRYPTION_SECRET=change-me-to-another-random-string
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
@@ -127,7 +129,8 @@ npm run cf:init -- --site-url=https://your-domain.com --with-kv
 ### 4. 设置 secrets
 
 ```bash
-npx wrangler secret put ADMIN_PASSWORD -c wrangler.local.toml
+npm run password:hash -- "your-admin-password"
+npx wrangler secret put ADMIN_PASSWORD_HASH -c wrangler.local.toml
 npx wrangler secret put ADMIN_TOKEN_SALT -c wrangler.local.toml
 npx wrangler secret put AI_CONFIG_ENCRYPTION_SECRET -c wrangler.local.toml
 ```
@@ -177,7 +180,8 @@ npm run cf:init -- --site-url=https://your-domain.com
 至少补齐：
 
 ```bash
-npx wrangler secret put ADMIN_PASSWORD -c wrangler.local.toml
+npm run password:hash -- "your-admin-password"
+npx wrangler secret put ADMIN_PASSWORD_HASH -c wrangler.local.toml
 npx wrangler secret put ADMIN_TOKEN_SALT -c wrangler.local.toml
 ```
 

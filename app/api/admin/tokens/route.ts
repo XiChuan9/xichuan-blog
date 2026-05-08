@@ -16,8 +16,12 @@ async function ensureTokensTable(db: D1Database) {
         is_active INTEGER DEFAULT 1
       )
     `).run()
-    await db.prepare('ALTER TABLE api_tokens ADD COLUMN token_preview TEXT NOT NULL DEFAULT ""').run().catch(() => {})
-  } catch { /* table already exists */ }
+    await db.prepare('ALTER TABLE api_tokens ADD COLUMN token_preview TEXT NOT NULL DEFAULT ""').run().catch((error) => {
+      console.warn('api_tokens token_preview migration skipped:', error)
+    })
+  } catch (error) {
+    console.warn('Unable to ensure api_tokens table:', error)
+  }
 }
 
 // Token 管理只允许 Cookie 认证（后台管理操作）

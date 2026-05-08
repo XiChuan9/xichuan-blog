@@ -81,7 +81,7 @@ describe('/api/posts route', () => {
         html: '<p>正文</p>',
         category: 'AI',
         status: 'draft',
-        password: 'secret',
+        password: expect.stringMatching(/^pbkdf2-sha256\$/),
         is_hidden: 1,
         description: '正文内容',
         tags: ['AI', '提示词', '编辑器', '产品', '设计', '测试', '额外', '更多', '仍然', '超出'],

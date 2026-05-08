@@ -4,6 +4,7 @@ import { invalidatePublicContentCache } from '@/lib/cache'
 import { buildAutoDescription, normalizePostSlug } from '@/lib/post-utils'
 import { enqueueBackgroundJob } from '@/lib/background-jobs'
 import { sanitizeArticleHtml } from '@/lib/html-sanitize'
+import { preparePostPasswordForStorage } from '@/lib/password'
 import { getRouteContextWithDb, jsonError, jsonInternalError, jsonOk, parseJsonBody } from '@/lib/server/route-helpers'
 import type { NextRequest } from 'next/server'
 
@@ -73,6 +74,7 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
     const normalizedDescription = typeof description === 'string' && description.trim()
       ? description.trim()
       : buildAutoDescription(typeof content === 'string' ? content : '')
+    const storedPassword = await preparePostPasswordForStorage(password)
 
     await updatePost(db, post.id, {
       slug: nextSlug || undefined,
@@ -81,7 +83,7 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
       html: typeof html === 'string' ? sanitizeArticleHtml(html) : html,
       category,
       status,
-      password,
+      password: storedPassword,
       is_pinned,
       is_hidden,
       cover_image,
