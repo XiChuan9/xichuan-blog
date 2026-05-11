@@ -151,7 +151,9 @@ export default async function RootLayout({
   try {
     var savedTheme = window.localStorage.getItem(themeStorageKey);
     if (isTheme(savedTheme)) applyTheme(savedTheme);
-  } catch (e) {}
+  } catch (e) {
+    // localStorage can be unavailable in private or restricted browser contexts.
+  }
 })();
 `
 

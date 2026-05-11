@@ -169,19 +169,16 @@ export function maskApiKey(apiKey: string): string {
 
 export function resolveAiConfigSecret(env?: Record<string, unknown>): string {
   const envSecret = typeof env?.AI_CONFIG_ENCRYPTION_SECRET === 'string'
-    ? env.AI_CONFIG_ENCRYPTION_SECRET
+    ? env.AI_CONFIG_ENCRYPTION_SECRET.trim()
     : ''
-  const envSalt = typeof env?.ADMIN_TOKEN_SALT === 'string'
-    ? env.ADMIN_TOKEN_SALT
-    : ''
+  const processSecret = process.env.AI_CONFIG_ENCRYPTION_SECRET?.trim() || ''
+  const secret = envSecret || processSecret
 
-  return (
-    envSecret ||
-    process.env.AI_CONFIG_ENCRYPTION_SECRET ||
-    envSalt ||
-    process.env.ADMIN_TOKEN_SALT ||
-    'xichuan-blog-ai-config-secret'
-  )
+  if (!secret) {
+    throw new Error('AI_CONFIG_ENCRYPTION_SECRET is required to encrypt stored AI provider credentials.')
+  }
+
+  return secret
 }
 
 export async function encryptApiKey(apiKey: string, secret: string): Promise<string> {

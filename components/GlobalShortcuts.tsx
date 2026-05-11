@@ -3,6 +3,10 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
+function isAdminSessionCookiePresent() {
+  return document.cookie.includes('xichuan-blog_admin=')
+}
+
 export function GlobalShortcuts() {
   const router = useRouter()
 
@@ -12,10 +16,8 @@ export function GlobalShortcuts() {
       if (e.metaKey && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         // 检查是否已登录
-        if (document.cookie.includes('xichuan-blog_admin=')) {
+        if (isAdminSessionCookiePresent()) {
           router.push('/editor')
-        } else {
-          console.log('请先登录后台')
         }
         return
       }
@@ -23,10 +25,8 @@ export function GlobalShortcuts() {
       // Ctrl + Cmd + N → 新建文章（备用快捷键）
       if (e.ctrlKey && e.metaKey && e.key.toLowerCase() === 'n') {
         e.preventDefault()
-        if (document.cookie.includes('xichuan-blog_admin=')) {
+        if (isAdminSessionCookiePresent()) {
           router.push('/editor')
-        } else {
-          console.log('请先登录后台')
         }
         return
       }
@@ -38,4 +38,3 @@ export function GlobalShortcuts() {
 
   return null
 }
-
