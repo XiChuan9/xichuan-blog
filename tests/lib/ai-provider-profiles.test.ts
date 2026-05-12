@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { resolveAiConfigSecret } from '@/lib/ai-provider-profiles'
+import { encryptApiKey, resolveAiConfigSecret } from '@/lib/ai-provider-profiles'
 
 describe('AI provider profile secrets', () => {
   const originalSecret = process.env.AI_CONFIG_ENCRYPTION_SECRET
@@ -24,5 +24,9 @@ describe('AI provider profile secrets', () => {
     process.env.AI_CONFIG_ENCRYPTION_SECRET = 'process-secret'
 
     expect(resolveAiConfigSecret({ AI_CONFIG_ENCRYPTION_SECRET: ' runtime-secret ' })).toBe('runtime-secret')
+  })
+
+  it('rejects direct encryption calls without an explicit secret', async () => {
+    await expect(encryptApiKey('sk-test', '')).rejects.toThrow('AI_CONFIG_ENCRYPTION_SECRET is required')
   })
 })

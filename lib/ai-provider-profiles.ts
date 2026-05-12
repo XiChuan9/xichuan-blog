@@ -119,7 +119,11 @@ function fromBase64(input: string): Uint8Array {
 }
 
 async function deriveAesKey(secret: string): Promise<CryptoKey> {
-  const normalized = secret.trim() || 'xichuan-blog-ai-config'
+  const normalized = secret.trim()
+  if (!normalized) {
+    throw new Error('AI_CONFIG_ENCRYPTION_SECRET is required to encrypt stored AI provider credentials.')
+  }
+
   const cached = keyCache.get(normalized)
   if (cached) return cached
 

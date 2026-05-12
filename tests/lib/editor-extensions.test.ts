@@ -6,6 +6,7 @@ import {
   createDefaultTableContent,
   hasMarkdownTable,
   normalizeUrl,
+  sanitizePastedHtml,
 } from '@/lib/editor-utils'
 
 describe('editor-extensions helpers', () => {
@@ -41,6 +42,27 @@ describe('editor-extensions helpers', () => {
   it('normalizes URLs by preserving http(s) links and prefixing bare domains', () => {
     expect(normalizeUrl('https://example.com')).toBe('https://example.com')
     expect(normalizeUrl('example.com/path')).toBe('https://example.com/path')
+  })
+
+  it('sanitizes pasted HTML before parsing it into the editor document', () => {
+    const wrapper = document.createElement('div')
+    wrapper.innerHTML = `
+      <p class="from-word" style="color:red" onclick="alert(1)" data-id="x">Text</p>
+      <a href="javascript:alert(1)">bad link</a>
+      <img src="https://example.com/a.png" onerror="alert(1)">
+      <iframe src="https://example.com/embed"></iframe>
+      <script>alert(1)</script>
+    `
+
+    sanitizePastedHtml(wrapper)
+
+    expect(wrapper.innerHTML).toContain('<p>Text</p>')
+    expect(wrapper.innerHTML).toContain('src="https://example.com/a.png"')
+    expect(wrapper.innerHTML).not.toContain('javascript:')
+    expect(wrapper.innerHTML).not.toContain('onclick')
+    expect(wrapper.innerHTML).not.toContain('onerror')
+    expect(wrapper.innerHTML).not.toContain('<iframe')
+    expect(wrapper.innerHTML).not.toContain('<script')
   })
 
   it('shows the bubble menu only for editable text selections, not image node selections', () => {

@@ -73,7 +73,7 @@ import {
   TRIGGER_INPUT_MODAL_EVENT,
 } from './editor-events'
 import { shouldShowEditorBubble } from './editor-bubble'
-import { createDefaultTableContent, hasMarkdownTable, normalizeUrl } from './editor-utils'
+import { createDefaultTableContent, hasMarkdownTable, normalizeUrl, sanitizePastedHtml } from './editor-utils'
 
 const md = markdownit({ html: true })
 
@@ -496,6 +496,7 @@ export function buildEditorProps(
         const { state, dispatch } = view
         const wrapper = document.createElement('div')
         wrapper.innerHTML = html
+        sanitizePastedHtml(wrapper)
         const slice = PMDOMParser.fromSchema(state.schema).parseSlice(wrapper)
         const tr = state.tr.replaceSelection(slice)
         dispatch(tr)
@@ -513,19 +514,7 @@ export function buildEditorProps(
         event.preventDefault()
         const wrapper = document.createElement('div')
         wrapper.innerHTML = htmlContent
-        const allElements = wrapper.querySelectorAll('*')
-        allElements.forEach((el) => {
-          el.removeAttribute('style')
-          el.removeAttribute('class')
-          el.removeAttribute('id')
-          Array.from(el.attributes).forEach((attr) => {
-            if (attr.name.startsWith('data-')) {
-              el.removeAttribute(attr.name)
-            }
-          })
-        })
-
-        wrapper.querySelectorAll('style').forEach((el) => el.remove())
+        sanitizePastedHtml(wrapper)
 
         const { state, dispatch } = view
         const slice = PMDOMParser.fromSchema(state.schema).parseSlice(wrapper)
