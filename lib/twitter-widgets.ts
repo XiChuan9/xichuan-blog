@@ -1,7 +1,49 @@
-export function extractTweetId(url: string | null | undefined): string | null {
+type TweetStatusUrl = {
+  href: string
+  tweetId: string
+}
+
+const TWITTER_STATUS_HOSTS = new Set([
+  'twitter.com',
+  'www.twitter.com',
+  'mobile.twitter.com',
+  'x.com',
+  'www.x.com',
+])
+
+function parseTweetStatusUrl(url: string | null | undefined): TweetStatusUrl | null {
   if (!url) return null
-  const match = url.match(/(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/i)
-  return match?.[1] ?? null
+
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return null
+  }
+
+  const hostname = parsed.hostname.toLowerCase()
+  if (
+    parsed.protocol !== 'https:' ||
+    parsed.username ||
+    parsed.password ||
+    !TWITTER_STATUS_HOSTS.has(hostname)
+  ) {
+    return null
+  }
+
+  const segments = parsed.pathname.split('/').filter(Boolean)
+  const statusIndex = segments.findIndex((segment) => segment.toLowerCase() === 'status')
+  const tweetId = statusIndex >= 0 ? segments[statusIndex + 1] : undefined
+  if (!tweetId || !/^\d+$/.test(tweetId)) return null
+
+  return {
+    href: parsed.href,
+    tweetId,
+  }
+}
+
+export function extractTweetId(url: string | null | undefined): string | null {
+  return parseTweetStatusUrl(url)?.tweetId ?? null
 }
 
 declare global {
@@ -58,20 +100,27 @@ export function loadTwitterWidgets(): Promise<void> {
 }
 
 export async function renderTweetEmbed(container: HTMLElement, src: string) {
-  const tweetId = extractTweetId(src)
-  if (!tweetId) return false
+  const tweet = parseTweetStatusUrl(src)
+  if (!tweet) return false
 
-  container.innerHTML = ''
+  container.textContent = ''
   await loadTwitterWidgets()
 
   try {
-    await window.twttr?.widgets.createTweet(tweetId, container, {
+    await window.twttr?.widgets.createTweet(tweet.tweetId, container, {
       align: 'center',
       conversation: 'none',
       dnt: true,
     })
   } catch {
-    container.innerHTML = `<a href="${src}" target="_blank" rel="noopener noreferrer" style="color:#1da1f2">${src}</a>`
+    const link = document.createElement('a')
+    link.href = tweet.href
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    link.style.color = '#1da1f2'
+    link.textContent = tweet.href
+    container.textContent = ''
+    container.appendChild(link)
   }
 
   return true

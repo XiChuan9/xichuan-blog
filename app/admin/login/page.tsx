@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Suspense, useState, type FormEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { resolveAdminLoginRedirectPath } from '@/lib/admin-login-redirect'
 
 function AdminLoginForm() {
   const [password, setPassword] = useState('')
@@ -29,8 +30,7 @@ function AdminLoginForm() {
 
       if (res.ok) {
         const redirectTo = searchParams.get('redirect_to') || '/admin'
-        // 安全检查：只允许跳转到本站路径
-        const safePath = redirectTo.startsWith('/') ? redirectTo : '/admin'
+        const safePath = resolveAdminLoginRedirectPath(redirectTo, window.location.origin)
         router.push(safePath)
         router.refresh()
       } else {
