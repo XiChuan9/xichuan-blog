@@ -36,10 +36,10 @@ export const FONT_PRESETS = [
   },
   {
     id: 'kaiti',
-    name: '楷体（tw93风格）',
-    desc: '仓耳今楷02，典雅文艺，自托管分片加载',
-    family: 'TsangerJinKai02, STKaiti, KaiTi, serif',
-    needsLoad: true,
+    name: '楷体',
+    desc: '使用系统楷体字体，避免额外字体授权负担',
+    family: 'STKaiti, KaiTi, "Kaiti SC", serif',
+    needsLoad: false,
   },
   {
     id: 'serif',
@@ -61,8 +61,7 @@ export type BodyFont = (typeof FONT_PRESETS)[number]['id']
 
 export const FONT_CONFIG: Record<string, { family: string; link?: string }> = {
   kaiti: {
-    family: 'TsangerJinKai02, STKaiti, KaiTi, serif',
-    link: '/fonts/jinkai/jinkai.css',
+    family: 'STKaiti, KaiTi, "Kaiti SC", serif',
   },
   serif: { family: 'Georgia, "Noto Serif SC", "Source Han Serif SC", serif' },
   heiti: { family: '"PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif' },

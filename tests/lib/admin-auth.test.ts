@@ -8,7 +8,7 @@ vi.mock('@/lib/cloudflare', () => ({
   })),
 }))
 
-import { authenticateCookieRequest, authenticateRequest, verifyApiToken, verifyPassword } from '@/lib/admin-auth'
+import { authenticateCookieRequest, authenticateRequest, hashApiToken, verifyApiToken, verifyPassword } from '@/lib/admin-auth'
 
 describe('admin cookie authentication request checks', () => {
   it('rejects cross-origin cookie mutations before reading the admin cookie', async () => {
@@ -71,5 +71,57 @@ describe('admin cookie authentication request checks', () => {
 
     await expect(authenticateRequest(request, db)).resolves.toBe(false)
     expect(db.prepare).not.toHaveBeenCalled()
+  })
+
+  it('limits bearer tokens to publishing API routes', async () => {
+    const request = {
+      method: 'POST',
+      url: 'https://blog.example.com/api/admin/ai-provider',
+      nextUrl: new URL('https://blog.example.com/api/admin/ai-provider'),
+      headers: new Headers({
+        Authorization: 'Bearer xc_valid_token',
+        Origin: 'https://blog.example.com',
+      }),
+      cookies: { get: vi.fn() },
+    } as unknown as NextRequest
+
+    const db = {
+      prepare: vi.fn(),
+    } as unknown as D1Database
+
+    await expect(authenticateRequest(request, db)).resolves.toBe(false)
+    expect(db.prepare).not.toHaveBeenCalled()
+  })
+
+  it('allows bearer tokens on documented external publishing routes', async () => {
+    const token = 'xc_valid_token'
+    const tokenHash = await hashApiToken(token)
+    const request = {
+      method: 'POST',
+      url: 'https://blog.example.com/api/posts',
+      nextUrl: new URL('https://blog.example.com/api/posts'),
+      headers: new Headers({
+        Authorization: `Bearer ${token}`,
+        Origin: 'https://blog.example.com',
+      }),
+      cookies: { get: vi.fn() },
+    } as unknown as NextRequest
+
+    const db = {
+      prepare: vi.fn((sql: string) => ({
+        bind: (...args: unknown[]) => ({
+          first: vi.fn(async () => {
+            if (sql.includes('SELECT id, is_active FROM api_tokens WHERE token = ?') && args[0] === tokenHash) {
+              return { id: 12, is_active: 1 }
+            }
+            return null
+          }),
+          run: vi.fn(async () => undefined),
+        }),
+      })),
+    } as unknown as D1Database
+
+    await expect(authenticateRequest(request, db)).resolves.toBe(true)
+    expect(db.prepare).toHaveBeenCalled()
   })
 })

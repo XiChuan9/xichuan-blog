@@ -3,7 +3,7 @@ import { getAppCloudflareEnv } from '@/lib/cloudflare'
 import { getPostAccessCookieName, verifyPostAccessToken } from '@/lib/password'
 import { sanitizeArticleHtml } from '@/lib/html-sanitize'
 import { notFound } from 'next/navigation'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
@@ -141,6 +141,7 @@ export default async function PostPage({
     : { strategy: 'fts' as const, source: 'rules' as const, results: [] }
   const contentContainerId = `post-content-${post.slug}`
   const safeHtml = sanitizeArticleHtml(post.html)
+  const nonce = (await headers()).get('x-nonce') || undefined
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
@@ -182,8 +183,8 @@ export default async function PostPage({
           }
           return (
             <>
-              <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-              <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+              <script nonce={nonce} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+              <script nonce={nonce} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
             </>
           )
         })()}

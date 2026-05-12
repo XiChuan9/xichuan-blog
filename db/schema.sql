@@ -36,24 +36,25 @@ CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts USING fts5(
   tokenize='unicode61'
 );
 
--- 触发器：自动同步 FTS。Cloudflare 部署会重复执行本文件，因此先删除再重建。
+-- 触发器：自动同步 FTS。Cloudflare 部署会重复执行本文件，因此先删除再重建；
+-- 创建语句保留 IF NOT EXISTS，避免并发初始化时触发器已被其他 isolate 创建。
 DROP TRIGGER IF EXISTS posts_ai;
 DROP TRIGGER IF EXISTS posts_au;
 DROP TRIGGER IF EXISTS posts_ad;
 
-CREATE TRIGGER posts_ai AFTER INSERT ON posts BEGIN
+CREATE TRIGGER IF NOT EXISTS posts_ai AFTER INSERT ON posts BEGIN
   INSERT INTO posts_fts(rowid, title, content)
   VALUES (new.id, new.title, new.content);
 END;
 
-CREATE TRIGGER posts_au AFTER UPDATE ON posts BEGIN
+CREATE TRIGGER IF NOT EXISTS posts_au AFTER UPDATE ON posts BEGIN
   INSERT INTO posts_fts(posts_fts, rowid, title, content)
   VALUES ('delete', old.id, old.title, old.content);
   INSERT INTO posts_fts(rowid, title, content)
   VALUES (new.id, new.title, new.content);
 END;
 
-CREATE TRIGGER posts_ad AFTER DELETE ON posts BEGIN
+CREATE TRIGGER IF NOT EXISTS posts_ad AFTER DELETE ON posts BEGIN
   INSERT INTO posts_fts(posts_fts, rowid, title, content)
   VALUES ('delete', old.id, old.title, old.content);
 END;

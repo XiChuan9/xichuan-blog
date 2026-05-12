@@ -1,6 +1,6 @@
 # XiChuan Blog
 
-[English README](README.en.md) · [中文 README](README.md)
+[English README](README.en.md) · [中文 README](README.md) · [第三方许可声明](THIRD_PARTY_NOTICES.md)
 
 [![CI](https://github.com/XiChuan9/xichuan-blog/actions/workflows/verify.yml/badge.svg)](https://github.com/XiChuan9/xichuan-blog/actions/workflows/verify.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -207,6 +207,7 @@ npm run preview
 - 贡献指南：[CONTRIBUTING.md](CONTRIBUTING.md)
 - 行为准则：[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 - 安全策略：[SECURITY.md](SECURITY.md)
+- API Token 仅用于外部发布链路，不能管理后台凭据、AI Provider 或其他站点设置。
 
 ## 作者
 

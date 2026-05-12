@@ -119,7 +119,7 @@ describe('ai-post-generators', () => {
       tags: [],
       currentSlug: '',
       db: {} as D1Database,
-      env: {} as Partial<CloudflareEnv>,
+      env: { AI_CONFIG_ENCRYPTION_SECRET: 'test-secret' } as Partial<CloudflareEnv>,
     })
 
     expect(result.value).toEqual(['AI写作', '提示词设计', '自动化工作流'])
@@ -254,7 +254,7 @@ describe('ai-post-generators', () => {
       tags: [],
       currentSlug: '',
       db: {} as D1Database,
-      env: {} as Partial<CloudflareEnv>,
+      env: { AI_CONFIG_ENCRYPTION_SECRET: 'test-secret' } as Partial<CloudflareEnv>,
     })
 
     expect(result.value).toEqual(['AI写作', '提示词设计', '自动化工作流'])

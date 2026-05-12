@@ -9,6 +9,7 @@ import { getAppCloudflareEnv } from "@/lib/cloudflare";
 import { getSetting } from "@/lib/db";
 import { resolveDefaultSiteCoverImage } from "@/lib/default-cover-images";
 import { getSiteUrl, getSiteUrlObject } from "@/lib/site-config";
+import { headers } from "next/headers";
 
 const geistSans = localFont({
   src: [
@@ -91,6 +92,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get('x-nonce') || undefined
   let customJs = ''
   let bodyFont = ''
   let defaultTheme = 'default'
@@ -168,9 +170,9 @@ export default async function RootLayout({
       <head>
         {font?.link && <link rel="stylesheet" href={font.link} />}
         {font && (
-          <style dangerouslySetInnerHTML={{ __html: `:root { --body-font: ${font.family}; }` }} />
+          <style nonce={nonce} dangerouslySetInnerHTML={{ __html: `:root { --body-font: ${font.family}; }` }} />
         )}
-        <script dangerouslySetInnerHTML={{ __html: appearanceApplyScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: appearanceApplyScript }} />
       </head>
       <body className="min-h-full flex flex-col">
         <ToastProvider>

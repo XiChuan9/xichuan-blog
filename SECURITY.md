@@ -16,7 +16,7 @@ Please do not open public issues for suspected vulnerabilities that expose secre
 ## Security Notes
 
 - Admin sessions use server-side random session tokens and can be revoked on logout.
-- API tokens are only shown once at creation time; the database stores token hashes for new tokens.
+- API tokens are only shown once at creation time; the database stores token hashes for new tokens, and bearer-token access is limited to external publishing endpoints.
 - Password-protected posts are a sharing convenience, not a substitute for strong access control. Access is granted through a short-lived HttpOnly cookie after password verification, and generated passwords should be treated as secrets.
 - Custom JavaScript is intentionally powerful and should only be edited by trusted administrators.
 - AI provider base URLs are restricted to HTTPS public endpoints to reduce SSRF risk.

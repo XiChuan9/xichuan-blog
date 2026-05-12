@@ -7,51 +7,7 @@ if (process.env.NODE_ENV === "development" && process.env.VERCEL !== "1") {
   });
 }
 
-const scriptSrc = [
-  "'self'",
-  "'unsafe-inline'",
-  process.env.NODE_ENV === "development" ? "'unsafe-eval'" : "",
-  "https://www.googletagmanager.com",
-  "https://www.google-analytics.com",
-  "https://ssl.google-analytics.com",
-  "https://hm.baidu.com",
-  "https://zz.bdstatic.com",
-  "https://hmcdn.baidu.com",
-  "https://plausible.io",
-  "https://cloud.umami.is",
-  "https://analytics.umami.is",
-  "https://cdn.usefathom.com",
-  "https://static.cloudflareinsights.com",
-  "https://static.hotjar.com",
-  "https://script.hotjar.com",
-  "https://js.hs-scripts.com",
-  "https://cdn.segment.com",
-  ...(process.env.NEXT_PUBLIC_CUSTOM_SCRIPT_HOSTS || "")
-    .split(",")
-    .map((host) => host.trim().replace(/^https?:\/\//, "").split("/")[0])
-    .filter((host) => /^[a-z0-9.-]+$/i.test(host))
-    .map((host) => `https://${host}`),
-].filter(Boolean).join(" ");
-
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  `script-src ${scriptSrc}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
-  "connect-src 'self' https:",
-  "media-src 'self' blob: https:",
-  "frame-src https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
-  "worker-src 'self' blob:",
-  "form-action 'self'",
-  "upgrade-insecure-requests",
-].join("; ");
-
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: contentSecurityPolicy },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },

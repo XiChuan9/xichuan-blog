@@ -5,6 +5,7 @@ import type { SiteCategoryLink, SiteNavLink } from '@/lib/site'
 import { getSiteHeaderData } from '@/lib/site'
 import { HomeClient } from '@/components/HomeClient'
 import { getSiteUrl } from '@/lib/site-config'
+import { headers } from 'next/headers'
 
 const PAGE_SIZE = 25
 const BASE_URL = getSiteUrl()
@@ -52,10 +53,12 @@ export default async function Home({
   const categorySlugMap: Record<string, string> = Object.fromEntries(
     categories.map((cat) => [cat.name, cat.slug])
   )
+  const nonce = (await headers()).get('x-nonce') || undefined
 
   return (
     <>
       <script
+        nonce={nonce}
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
@@ -73,6 +76,7 @@ export default async function Home({
         }}
       />
       <script
+        nonce={nonce}
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({

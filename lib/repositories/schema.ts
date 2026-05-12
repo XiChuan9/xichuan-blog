@@ -52,6 +52,7 @@ const BASE_SCHEMA_STATEMENTS = [
 // 自动迁移：确保基础表和列存在。
 // Cloudflare 生产仍建议走 wrangler d1 migrations；Vercel/Turso 可在首次请求自举。
 let schemaInitialized = false
+let schemaInitializationPromise: Promise<void> | null = null
 
 const POSTS_FTS_SCHEMA = `CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts USING fts5(
   title,
@@ -62,17 +63,17 @@ const POSTS_FTS_SCHEMA = `CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts USING fts
 )`
 
 const POSTS_FTS_TRIGGERS = [
-  `CREATE TRIGGER posts_ai AFTER INSERT ON posts BEGIN
+  `CREATE TRIGGER IF NOT EXISTS posts_ai AFTER INSERT ON posts BEGIN
     INSERT INTO posts_fts(rowid, title, content)
     VALUES (new.id, new.title, new.content);
   END`,
-  `CREATE TRIGGER posts_au AFTER UPDATE ON posts BEGIN
+  `CREATE TRIGGER IF NOT EXISTS posts_au AFTER UPDATE ON posts BEGIN
     INSERT INTO posts_fts(posts_fts, rowid, title, content)
     VALUES ('delete', old.id, old.title, old.content);
     INSERT INTO posts_fts(rowid, title, content)
     VALUES (new.id, new.title, new.content);
   END`,
-  `CREATE TRIGGER posts_ad AFTER DELETE ON posts BEGIN
+  `CREATE TRIGGER IF NOT EXISTS posts_ad AFTER DELETE ON posts BEGIN
     INSERT INTO posts_fts(posts_fts, rowid, title, content)
     VALUES ('delete', old.id, old.title, old.content);
   END`,
@@ -116,9 +117,7 @@ async function ensurePostsFtsIndex(db: Database) {
   }
 }
 
-export async function ensureSchema(db: Database) {
-  if (schemaInitialized) return
-
+async function initializeSchema(db: Database) {
   try {
     for (const sql of BASE_SCHEMA_STATEMENTS) {
       await db.prepare(sql).run()
@@ -146,4 +145,14 @@ export async function ensureSchema(db: Database) {
   } catch (error: unknown) {
     console.error('Schema migration failed:', error)
   }
+}
+
+export async function ensureSchema(db: Database) {
+  if (schemaInitialized) return
+
+  schemaInitializationPromise ||= initializeSchema(db).finally(() => {
+    schemaInitializationPromise = null
+  })
+
+  await schemaInitializationPromise
 }

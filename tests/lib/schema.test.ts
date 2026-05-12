@@ -46,10 +46,21 @@ describe('ensureSchema', () => {
     expect(statements).toContain('DROP TRIGGER IF EXISTS posts_ai')
     expect(statements).toContain('DROP TRIGGER IF EXISTS posts_au')
     expect(statements).toContain('DROP TRIGGER IF EXISTS posts_ad')
+    expect(statements.some((sql) => sql.includes('CREATE TRIGGER IF NOT EXISTS posts_ai'))).toBe(true)
     expect(statements.some((sql) => sql.includes('UPDATE posts_fts SET'))).toBe(false)
     expect(statements.some((sql) => sql.includes('DELETE FROM posts_fts WHERE rowid'))).toBe(false)
     expect(statements.some((sql) => sql.includes("VALUES ('delete', old.id, old.title, old.content);"))).toBe(true)
     expect(statements).toContain("INSERT INTO posts_fts(posts_fts) VALUES ('rebuild')")
+  })
+
+  it('deduplicates concurrent schema initialization in one runtime isolate', async () => {
+    const { ensureSchema } = await import('@/lib/repositories/schema')
+    const { db, statements } = createMockDb()
+
+    await Promise.all([ensureSchema(db), ensureSchema(db), ensureSchema(db)])
+
+    expect(statements.filter((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS posts'))).toHaveLength(1)
+    expect(statements.filter((sql) => sql === "INSERT INTO posts_fts(posts_fts) VALUES ('rebuild')")).toHaveLength(1)
   })
 
   it('recreates the FTS table if rebuilding a stale index fails', async () => {
@@ -71,6 +82,7 @@ describe('ensureSchema', () => {
     expect(sql).toContain('CREATE INDEX IF NOT EXISTS idx_posts_slug')
     expect(sql).toContain('CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts')
     expect(sql).toContain('DROP TRIGGER IF EXISTS posts_au')
+    expect(sql).toContain('CREATE TRIGGER IF NOT EXISTS posts_ai')
     expect(sql).toContain("VALUES ('delete', old.id, old.title, old.content);")
     expect(sql).toContain('INSERT OR IGNORE INTO categories')
     expect(sql).toContain('token_preview TEXT')

@@ -1,6 +1,6 @@
 # XiChuan Blog
 
-[English README](README.en.md) · [中文 README](README.md)
+[English README](README.en.md) · [中文 README](README.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 [![CI](https://github.com/XiChuan9/xichuan-blog/actions/workflows/verify.yml/badge.svg)](https://github.com/XiChuan9/xichuan-blog/actions/workflows/verify.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -134,7 +134,7 @@ npm run deploy:cloudflare
 
 ## Security
 
-Admin passwords are stored as PBKDF2 hashes. Article access codes are hashed before they are stored. API tokens are stored hashed and shown only once at creation time.
+Admin passwords are stored as PBKDF2 hashes. Article access codes are hashed before they are stored. API tokens are stored hashed, shown only once at creation time, and limited to the documented external publishing endpoints.
 
 Custom site scripts are restricted to HTTPS external scripts from trusted analytics hosts. Inline JavaScript and arbitrary HTML are ignored.
 

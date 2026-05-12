@@ -229,6 +229,7 @@ export async function authenticateRequest(
   // 1. 先检查 Bearer Token
   const authHeader = req.headers.get('Authorization')
   if (authHeader?.startsWith('Bearer ') && db) {
+    if (!isBearerTokenAllowedRequest(req)) return false
     if (!isSafeCrossOriginRequest(req)) return false
     const token = authHeader.slice(7)
     return await verifyApiToken(db, token)
@@ -271,6 +272,27 @@ function getAllowedOrigins(req: NextRequest) {
   const configured = normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL)
   if (configured) origins.add(configured)
   return origins
+}
+
+function getRequestPathname(req: NextRequest) {
+  if (req.nextUrl?.pathname) return req.nextUrl.pathname
+  try {
+    return new URL(req.url).pathname
+  } catch {
+    return ''
+  }
+}
+
+function isBearerTokenAllowedRequest(req: NextRequest) {
+  const method = req.method.toUpperCase()
+  const pathname = getRequestPathname(req)
+
+  if (pathname === '/api/posts' && ['POST', 'PATCH'].includes(method)) return true
+  if (pathname === '/api/uploads' && method === 'POST') return true
+  if (pathname === '/api/uploads/client' && method === 'POST') return true
+  if (pathname === '/api/admin/categories' && method === 'GET') return true
+
+  return false
 }
 
 function isSafeCrossOriginRequest(req: NextRequest, unsafeMethodsOnly = false) {

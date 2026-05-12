@@ -1,4 +1,4 @@
-const DEFAULT_CUSTOM_SCRIPT_HOSTS = [
+export const DEFAULT_CUSTOM_SCRIPT_HOSTS = [
   'www.googletagmanager.com',
   'www.google-analytics.com',
   'ssl.google-analytics.com',

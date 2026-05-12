@@ -1,3 +1,9 @@
+/*!
+ * Turndown
+ * Copyright (c) 2017 Dom Christie
+ * SPDX-License-Identifier: MIT
+ * See THIRD_PARTY_NOTICES.md for the full notice.
+ */
 var TurndownService = (function () {
   'use strict';
 
