@@ -4,6 +4,7 @@ import {
   createMathMarkdownParser,
   normalizeLatexInput,
   renderMathHtml,
+  renderTextWithMathHtml,
 } from '@/lib/math-markdown'
 
 describe('math markdown helpers', () => {
@@ -33,5 +34,13 @@ describe('math markdown helpers', () => {
     expect(html).toContain('E = mc^2')
     expect(html).toContain('E[X] = \\sum x_i \\cdot P(x_i)')
     expect(html).not.toContain('P($x_i$)')
+  })
+
+  it('enhances legacy text formulas without treating normal text as markdown', () => {
+    const html = renderTextWithMathHtml('用公式 (E\\[X\\] = \\\\sum x_i \\\\cdot P(x_i))，不要改 **粗体**。')
+
+    expect(html).toContain('data-display-mode="false"')
+    expect(html).toContain('E[X] = \\sum x_i \\cdot P(x_i)')
+    expect(html).toContain('不要改 **粗体**。')
   })
 })

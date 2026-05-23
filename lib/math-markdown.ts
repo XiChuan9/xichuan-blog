@@ -19,6 +19,15 @@ function escapeAttribute(value: string) {
     .replace(/>/g, '&gt;')
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function isEscaped(src: string, pos: number) {
   let count = 0
   for (let index = pos - 1; index >= 0 && src[index] === '\\'; index -= 1) {
@@ -271,6 +280,63 @@ export function renderMathHtml(latex: string, displayMode: boolean) {
   }
 
   return `<${tagName} data-math-latex="${escapeAttribute(normalized)}" data-display-mode="${String(displayMode)}" class="${className}">${rendered}</${tagName}>`
+}
+
+export function renderTextWithMathHtml(value: string) {
+  const source = wrapFormulaLikeParens(value)
+  let html = ''
+  let cursor = 0
+  let changed = false
+
+  const appendText = (end: number) => {
+    if (end > cursor) {
+      html += escapeHtml(source.slice(cursor, end))
+    }
+  }
+
+  while (cursor < source.length) {
+    let matchStart = -1
+    let open = ''
+    let close = ''
+
+    for (let index = cursor; index < source.length; index += 1) {
+      if ((source.startsWith('\\(', index) || source.startsWith('\\\\(', index)) && !isEscaped(source, index)) {
+        matchStart = index
+        open = source.startsWith('\\\\(', index) ? '\\\\(' : '\\('
+        close = open === '\\\\(' ? '\\\\)' : '\\)'
+        break
+      }
+
+      if (source[index] === '$' && source[index + 1] !== '$' && !isEscaped(source, index)) {
+        matchStart = index
+        open = '$'
+        close = '$'
+        break
+      }
+    }
+
+    if (matchStart === -1) break
+
+    const mathStart = matchStart + open.length
+    const matchEnd = findClosingDelimiter(source, mathStart, close)
+    if (matchEnd === -1) break
+
+    const latex = source.slice(mathStart, matchEnd)
+    if (!latex.trim() || (open === '$' && /^\s|\s$/.test(latex))) {
+      html += escapeHtml(source.slice(cursor, matchStart + open.length))
+      cursor = matchStart + open.length
+      continue
+    }
+
+    appendText(matchStart)
+    html += renderMathHtml(latex, false)
+    cursor = matchEnd + close.length
+    changed = true
+  }
+
+  if (!changed) return null
+  html += escapeHtml(source.slice(cursor))
+  return html
 }
 
 function mathInlineRule(state: StateInline, silent: boolean) {

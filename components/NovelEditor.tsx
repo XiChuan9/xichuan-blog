@@ -56,6 +56,7 @@ import {
   uploadEditorFile,
 } from '@/lib/editor-file-upload'
 import { copyAsWechatArticleFormat, downloadArticleAsPdf } from '@/lib/wechat-copy'
+import { normalizeMathHtmlForEditor } from '@/lib/math-dom'
 import {
   extractFilesFromClipboard,
   useEditorAuxiliaryModals,
@@ -1226,8 +1227,9 @@ export function NovelEditor({ initialData }: NovelEditorProps = {}) {
                       const st = editor.storage as any
                       setCharCount(st.characterCount?.characters?.() ?? 0)
                       if (initialData?.html) {
+                        const normalizedInitialHtml = normalizeMathHtmlForEditor(initialData.html)
                         skipNextEditorUpdateRef.current = true
-                        editor.commands.setContent(initialData.html)
+                        editor.commands.setContent(normalizedInitialHtml)
                       } else {
                         skipNextEditorUpdateRef.current = false
                       }

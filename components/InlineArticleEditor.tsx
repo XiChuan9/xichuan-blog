@@ -21,6 +21,7 @@ import { ImageGenerationModal } from '@/components/ImageGenerationModal'
 import { ImageCropModal } from '@/components/ImageCropModal'
 import { AIModal } from '@/lib/ai-modal'
 import { EDITOR_IMAGE_OPTIMIZE_OPTIONS, optimizeImageForUpload } from '@/lib/client-image'
+import { normalizeMathHtmlForEditor } from '@/lib/math-dom'
 import {
   createUploadPlaceholderMarker,
   insertGeneratedImageAfterNode,
@@ -166,7 +167,7 @@ export function InlineArticleEditor({
   const handleDiscard = () => {
     const editor = editorRef.current
     if (!editor) return
-    editor.commands.setContent(originalHtmlRef.current)
+    editor.commands.setContent(normalizeMathHtmlForEditor(originalHtmlRef.current))
     setTitle(originalTitleRef.current)
     setSelectedCategory(originalCategoryRef.current)
     setCoverImage(originalCoverImageRef.current)
@@ -522,7 +523,9 @@ export function InlineArticleEditor({
           editorProps={editorProps}
           onCreate={({ editor }) => {
             editorRef.current = editor
-            editor.commands.setContent(html)
+            const normalizedInitialHtml = normalizeMathHtmlForEditor(html)
+            originalHtmlRef.current = normalizedInitialHtml
+            editor.commands.setContent(normalizedInitialHtml)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const st = editor.storage as any
             setCharCount(st.characterCount?.characters?.() ?? 0)

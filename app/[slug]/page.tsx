@@ -10,6 +10,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { FrontPostAdminBoundary } from '@/components/FrontPostAdminBoundary'
 import { PasswordPrompt } from '@/components/PasswordPrompt'
 import { DownloadMarkdown } from '@/components/DownloadMarkdown'
+import { MathContentEnhancer } from '@/components/MathContentEnhancer'
 import { TwitterEmbedsEnhancer } from '@/components/TwitterEmbedsEnhancer'
 import { getSiteHeaderData } from '@/lib/site'
 import { getRelatedPosts } from '@/lib/related-content'
@@ -246,6 +247,7 @@ export default async function PostPage({
               className="rich-content"
               dangerouslySetInnerHTML={{ __html: safeHtml }}
             />
+            <MathContentEnhancer containerId={contentContainerId} html={safeHtml} />
             <TwitterEmbedsEnhancer containerId={contentContainerId} html={safeHtml} />
 
             {related.results.length > 0 && (
