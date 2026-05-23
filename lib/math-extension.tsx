@@ -1,26 +1,87 @@
 'use client'
 
-import { Node, mergeAttributes } from '@tiptap/core'
+import { Node as TiptapNode, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer, NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react'
+import type { DOMOutputSpec } from '@tiptap/pm/model'
 import { useState, useEffect, useRef } from 'react'
 import katex from 'katex'
+import { normalizeLatexInput, renderMathHtml } from './math-markdown'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     mathBlock: {
-      setMathBlock: (options: { latex?: string; displayMode?: boolean }) => ReturnType
+      setMathBlock: (options: { latex?: string }) => ReturnType
+    }
+    mathInline: {
+      setMathInline: (options: { latex?: string }) => ReturnType
     }
   }
 }
 
-// ── React 组件：数学公式渲染 ──
+type MathTagName = 'div' | 'span'
+
+function parseDisplayMode(element: HTMLElement, fallback: boolean) {
+  const value = element.getAttribute('data-display-mode')
+  return value === null ? fallback : value !== 'false'
+}
+
+function parseLatex(element: HTMLElement) {
+  return normalizeLatexInput(
+    element.getAttribute('data-math-latex') ||
+    element.getAttribute('latex') ||
+    element.textContent ||
+    ''
+  )
+}
+
+function createMathDomSpec(
+  tagName: MathTagName,
+  latex: string,
+  displayMode: boolean,
+  HTMLAttributes: Record<string, unknown>,
+): DOMOutputSpec {
+  const normalized = normalizeLatexInput(latex)
+  const className = displayMode ? 'math-block-wrapper' : 'math-inline-wrapper'
+  const attrs = mergeAttributes(
+    HTMLAttributes,
+    {
+      'data-math-latex': normalized,
+      'data-display-mode': String(displayMode),
+      class: className,
+    },
+  )
+
+  if (typeof document === 'undefined') {
+    return [tagName, attrs, normalized]
+  }
+
+  const template = document.createElement('template')
+  template.innerHTML = renderMathHtml(normalized, displayMode)
+  const element = template.content.firstElementChild
+
+  if (!element) {
+    return [tagName, attrs, normalized]
+  }
+
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value === null || value === undefined || value === false) {
+      element.removeAttribute(key)
+      continue
+    }
+    element.setAttribute(key, String(value))
+  }
+
+  return element
+}
+
 function MathComponent(props: ReactNodeViewProps) {
   const { node, updateAttributes, selected } = props
-  const latex = (node.attrs.latex as string) || ''
+  const latex = normalizeLatexInput((node.attrs.latex as string) || '')
   const displayMode = (node.attrs.displayMode as boolean) ?? false
   const [editing, setEditing] = useState(!latex)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
-  const renderRef = useRef<HTMLDivElement>(null)
+  const blockInputRef = useRef<HTMLTextAreaElement>(null)
+  const inlineInputRef = useRef<HTMLInputElement>(null)
+  const renderRef = useRef<HTMLDivElement | HTMLSpanElement>(null)
 
   useEffect(() => {
     if (!editing && latex && renderRef.current) {
@@ -37,40 +98,37 @@ function MathComponent(props: ReactNodeViewProps) {
   }, [latex, displayMode, editing])
 
   useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus()
-      inputRef.current.select()
-    }
-  }, [editing])
+    if (!editing) return
 
-  if (editing) {
+    const input = displayMode ? blockInputRef.current : inlineInputRef.current
+    input?.focus()
+    input?.select()
+  }, [displayMode, editing])
+
+  const commit = (value: string) => {
+    const nextLatex = normalizeLatexInput(value)
+    if (nextLatex) {
+      updateAttributes({ latex: nextLatex, displayMode })
+    }
+    setEditing(false)
+  }
+
+  if (editing && displayMode) {
     return (
-      <NodeViewWrapper className="math-node-editing" data-type="math">
+      <NodeViewWrapper as="div" className="math-node-editing" data-type="math">
         <div className="math-editor-container">
-          <label className="math-editor-label">
-            {displayMode ? '块级公式 (LaTeX)' : '行内公式 (LaTeX)'}
-          </label>
+          <label className="math-editor-label">块级公式 (LaTeX)</label>
           <textarea
-            ref={inputRef}
+            ref={blockInputRef}
             defaultValue={latex}
             placeholder="E = mc^2"
-            rows={displayMode ? 3 : 1}
+            rows={3}
             className="math-editor-input"
-            onBlur={(e) => {
-              const val = e.target.value.trim()
-              if (val) {
-                updateAttributes({ latex: val })
-                setEditing(false)
-              }
-            }}
+            onBlur={(e) => commit(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
-                const val = (e.target as HTMLTextAreaElement).value.trim()
-                if (val) {
-                  updateAttributes({ latex: val })
-                  setEditing(false)
-                }
+                commit((e.target as HTMLTextAreaElement).value)
               }
               if (e.key === 'Escape') {
                 setEditing(false)
@@ -82,20 +140,47 @@ function MathComponent(props: ReactNodeViewProps) {
     )
   }
 
+  if (editing) {
+    return (
+      <NodeViewWrapper as="span" className="math-node-editing math-node-editing-inline" data-type="math">
+        <input
+          ref={inlineInputRef}
+          defaultValue={latex}
+          placeholder="E = mc^2"
+          className="math-editor-input math-editor-input-inline"
+          onBlur={(e) => commit(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit((e.target as HTMLInputElement).value)
+            }
+            if (e.key === 'Escape') {
+              setEditing(false)
+            }
+          }}
+        />
+      </NodeViewWrapper>
+    )
+  }
+
   return (
     <NodeViewWrapper
-      className={`math-node-rendered ${selected ? 'math-selected' : ''}`}
+      as={displayMode ? 'div' : 'span'}
+      className={`math-node-rendered ${displayMode ? 'math-node-rendered-block' : 'math-node-rendered-inline'} ${selected ? 'math-selected' : ''}`}
       data-type="math"
       onClick={() => setEditing(true)}
       title="点击编辑公式"
     >
-      <div ref={renderRef} className={displayMode ? 'math-display' : 'math-inline'} />
+      {displayMode ? (
+        <div ref={renderRef as React.RefObject<HTMLDivElement>} className="math-display" />
+      ) : (
+        <span ref={renderRef as React.RefObject<HTMLSpanElement>} className="math-inline" />
+      )}
     </NodeViewWrapper>
   )
 }
 
-// ── Tiptap Node 扩展 ──
-export const MathNode = Node.create({
+export const MathBlockNode = TiptapNode.create({
   name: 'mathBlock',
   group: 'block',
   atom: true,
@@ -103,32 +188,28 @@ export const MathNode = Node.create({
 
   addAttributes() {
     return {
-      latex: { default: '' },
-      displayMode: { default: true },
+      latex: {
+        default: '',
+        parseHTML: parseLatex,
+        renderHTML: () => ({}),
+      },
+      displayMode: {
+        default: true,
+        parseHTML: (element: HTMLElement) => parseDisplayMode(element, true),
+        renderHTML: () => ({}),
+      },
     }
   },
 
   parseHTML() {
-    return [{ tag: 'div[data-math-latex]' }]
+    return [
+      { tag: 'div[data-math-latex]' },
+      { tag: 'div.math-block-wrapper' },
+    ]
   },
 
-  renderHTML({ HTMLAttributes }) {
-    const latex = HTMLAttributes.latex || ''
-    const displayMode = HTMLAttributes.displayMode !== false
-    let rendered = ''
-    try {
-      rendered = katex.renderToString(latex, { displayMode, throwOnError: false })
-    } catch {
-      rendered = `<code>${latex}</code>`
-    }
-    return [
-      'div',
-      mergeAttributes(
-        { 'data-math-latex': latex, 'data-display-mode': String(displayMode), class: 'math-block-wrapper' },
-        HTMLAttributes
-      ),
-      rendered,
-    ]
+  renderHTML({ node, HTMLAttributes }) {
+    return createMathDomSpec('div', String(node.attrs.latex || ''), true, HTMLAttributes)
   },
 
   addNodeView() {
@@ -138,13 +219,66 @@ export const MathNode = Node.create({
   addCommands() {
     return {
       setMathBlock:
-        (options: { latex?: string; displayMode?: boolean }) =>
+        (options: { latex?: string }) =>
         ({ commands }) => {
           return commands.insertContent({
             type: this.name,
-            attrs: { latex: options.latex ?? '', displayMode: options.displayMode ?? true },
+            attrs: { latex: normalizeLatexInput(options.latex ?? ''), displayMode: true },
           })
         },
     }
   },
 })
+
+export const MathInlineNode = TiptapNode.create({
+  name: 'mathInline',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
+
+  addAttributes() {
+    return {
+      latex: {
+        default: '',
+        parseHTML: parseLatex,
+        renderHTML: () => ({}),
+      },
+      displayMode: {
+        default: false,
+        parseHTML: (element: HTMLElement) => parseDisplayMode(element, false),
+        renderHTML: () => ({}),
+      },
+    }
+  },
+
+  parseHTML() {
+    return [
+      { tag: 'span[data-math-latex]' },
+      { tag: 'span.math-inline-wrapper' },
+    ]
+  },
+
+  renderHTML({ node, HTMLAttributes }) {
+    return createMathDomSpec('span', String(node.attrs.latex || ''), false, HTMLAttributes)
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(MathComponent)
+  },
+
+  addCommands() {
+    return {
+      setMathInline:
+        (options: { latex?: string }) =>
+        ({ commands }) => {
+          return commands.insertContent({
+            type: this.name,
+            attrs: { latex: normalizeLatexInput(options.latex ?? ''), displayMode: false },
+          })
+        },
+    }
+  },
+})
+
+export const MathNode = [MathBlockNode, MathInlineNode]

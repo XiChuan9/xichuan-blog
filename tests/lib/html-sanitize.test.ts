@@ -22,4 +22,18 @@ describe('sanitizeArticleHtml', () => {
     expect(html).not.toContain('camera')
     expect(html).not.toContain('microphone')
   })
+
+  it('preserves KaTeX layout styles generated for math formulas', () => {
+    const html = sanitizeArticleHtml(`
+      <span class="katex">
+        <span class="strut" style="height:1em;vertical-align:-0.25em;"></span>
+        <span style="top:-2.55em;margin-left:0em;margin-right:0.05em;position:relative;">x</span>
+      </span>
+    `)
+
+    expect(html).toContain('vertical-align:-0.25em')
+    expect(html).toContain('top:-2.55em')
+    expect(html).toContain('margin-right:0.05em')
+    expect(html).toContain('position:relative')
+  })
 })

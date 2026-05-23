@@ -33,7 +33,6 @@ import AutoJoiner from 'tiptap-extension-auto-joiner'
 import { Markdown } from 'tiptap-markdown'
 import { DOMParser as PMDOMParser } from '@tiptap/pm/model'
 import type { EditorView } from '@tiptap/pm/view'
-import markdownit from 'markdown-it'
 import { useEffect, useState } from 'react'
 import {
   AlignLeft,
@@ -60,6 +59,7 @@ import {
 import { TwitterNode } from './twitter-extension'
 import { ResizableImage, type ResizableImageActionHandlers } from './resizable-image'
 import { MathNode } from './math-extension'
+import { containsMathMarkdown, createMathMarkdownParser, normalizeLatexInput } from './math-markdown'
 import { AudioNode } from './audio-extension'
 import { VideoNode } from './video-extension'
 import {
@@ -75,7 +75,7 @@ import {
 import { shouldShowEditorBubble } from './editor-bubble'
 import { createDefaultTableContent, hasMarkdownTable, normalizeUrl, sanitizePastedHtml } from './editor-utils'
 
-const md = markdownit({ html: true })
+const md = createMathMarkdownParser({ html: true })
 
 function CommandIcon({ label }: { label: string }) {
   return (
@@ -402,7 +402,7 @@ export function createEditorExtensions(options: EditorExtensionOptions = {}) {
       interfaceLanguage: 'zh',
     }),
     TwitterNode,
-    MathNode,
+    ...MathNode,
     AudioNode,
     VideoNode,
     Markdown.configure({ html: true, transformPastedText: true, transformCopiedText: true }),
@@ -490,7 +490,7 @@ export function buildEditorProps(
       }
 
       const plainText = event.clipboardData?.getData('text/plain') ?? ''
-      if (hasMarkdownTable(plainText)) {
+      if (plainText && (hasMarkdownTable(plainText) || containsMathMarkdown(plainText))) {
         event.preventDefault()
         const html = md.render(plainText)
         const { state, dispatch } = view
@@ -968,11 +968,14 @@ export function FormattingBubble() {
                   window.dispatchEvent(new CustomEvent<InputModalDetail>(TRIGGER_INPUT_MODAL_EVENT, {
                     detail: {
                       title: '插入 LaTeX 数学公式',
-                      placeholder: 'E = mc^2',
+                      placeholder: 'E[X] = \\sum x_i \\cdot P(x_i)',
                       callback: (latex) => {
                         editor.commands.insertContent({
-                          type: 'mathBlock',
-                          attrs: { latex, displayMode: true },
+                          type: editor.state.selection.empty ? 'mathBlock' : 'mathInline',
+                          attrs: {
+                            latex: normalizeLatexInput(latex),
+                            displayMode: editor.state.selection.empty,
+                          },
                         })
                       },
                     },

@@ -22,6 +22,7 @@ const ALLOWED_TAGS = [
 
 const COLOR_VALUE = /^#[0-9a-f]{3,8}$|^rgb(a)?\([\d\s.,%]+\)$|^[a-z]+$/i
 const LENGTH_VALUE = /^\d{1,4}(px|em|rem|%)?$/
+const KATEX_LENGTH_VALUE = /^-?\d{1,4}(\.\d{1,6})?(px|em|rem|%)?$/
 const ALIGN_VALUE = /^(left|right|center|justify)$/
 const ALLOWED_IFRAME_FEATURES = new Set([
   'accelerometer',
@@ -88,6 +89,11 @@ export function sanitizeArticleHtml(html: string): string {
         'text-align': [ALIGN_VALUE],
         width: [LENGTH_VALUE],
         height: [LENGTH_VALUE],
+        'margin-left': [KATEX_LENGTH_VALUE],
+        'margin-right': [KATEX_LENGTH_VALUE],
+        position: [/^relative$/],
+        top: [KATEX_LENGTH_VALUE],
+        'vertical-align': [KATEX_LENGTH_VALUE],
       },
     },
     transformTags: {

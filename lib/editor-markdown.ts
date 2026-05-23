@@ -1,9 +1,9 @@
 import { DOMParser as PMDOMParser } from '@tiptap/pm/model'
 import { TextSelection } from '@tiptap/pm/state'
 import type { EditorInstance } from 'novel'
-import markdownit from 'markdown-it'
+import { createMathMarkdownParser } from '@/lib/math-markdown'
 
-const markdownParser = markdownit({
+const markdownParser = createMathMarkdownParser({
   html: false,
   linkify: true,
 })

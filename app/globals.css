@@ -618,6 +618,11 @@ body {
 .math-node-editing {
   margin: 1rem 0;
 }
+.math-node-editing-inline {
+  display: inline-flex;
+  margin: 0 0.15rem;
+  vertical-align: baseline;
+}
 .math-editor-container {
   border: 1px solid var(--editor-line);
   border-radius: 8px;
@@ -646,12 +651,26 @@ body {
   border-color: var(--editor-accent);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
+.math-editor-input-inline {
+  width: min(22rem, 70vw);
+  padding: 0.25rem 0.4rem;
+  font-size: 0.85rem;
+}
 .math-node-rendered {
-  margin: 1rem 0;
   cursor: pointer;
-  padding: 0.5rem;
   border-radius: 6px;
   transition: background 0.15s;
+}
+.math-node-rendered-block {
+  display: block;
+  margin: 1rem 0;
+  padding: 0.5rem;
+}
+.math-node-rendered-inline {
+  display: inline-flex;
+  margin: 0 0.15rem;
+  padding: 0 0.15rem;
+  vertical-align: baseline;
 }
 .math-node-rendered:hover {
   background: #f0f4ff;
@@ -671,6 +690,10 @@ body {
   margin: 1.5rem 0;
   text-align: center;
   overflow-x: auto;
+}
+.math-inline-wrapper {
+  display: inline-block;
+  vertical-align: baseline;
 }
 
 /* ── 主题：logo 字体变量 ── */
