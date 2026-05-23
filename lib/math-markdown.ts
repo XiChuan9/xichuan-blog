@@ -60,6 +60,21 @@ function findBalancedParen(src: string, start: number) {
   return -1
 }
 
+function findBalancedSquareBracket(src: string, start: number) {
+  let depth = 0
+  for (let index = start; index < src.length; index += 1) {
+    const char = src[index]
+    if (char === '\n') return -1
+    if (isEscaped(src, index)) continue
+    if (char === '[') depth += 1
+    if (char === ']') {
+      depth -= 1
+      if (depth === 0) return index
+    }
+  }
+  return -1
+}
+
 function stripPair(value: string, open: string, close: string) {
   return value.startsWith(open) && value.endsWith(close)
     ? value.slice(open.length, value.length - close.length).trim()
@@ -130,6 +145,18 @@ function splitFormulaLikeText(value: string) {
   }
 
   return parts
+}
+
+function hasSquareBracketMath(value: string) {
+  for (let index = 0; index < value.length; index += 1) {
+    if (value[index] !== '[' || isEscaped(value, index)) continue
+
+    const close = findBalancedSquareBracket(value, index)
+    if (close === -1) return false
+
+    if (isFormulaLike(value.slice(index + 1, close))) return true
+  }
+  return false
 }
 
 function escapeDollarDelimiter(value: string) {
@@ -259,6 +286,7 @@ export function containsMathMarkdown(value: string) {
     /(^|\n)\s*(\$\$|\\\[|\\\\\[)/.test(value) ||
     /\\\(|\\\\\(/.test(value) ||
     hasSingleDollarMath(value) ||
+    hasSquareBracketMath(value) ||
     /\([^()\n]*(?:\\[a-zA-Z]+|\\\\[a-zA-Z]+|[_^])[^()\n]*(?:\([^()\n]*\)[^()\n]*)?\)/.test(value)
   )
 }
@@ -313,16 +341,31 @@ export function renderTextWithMathHtml(value: string) {
         close = '$'
         break
       }
+
+      if (source[index] === '[' && !isEscaped(source, index)) {
+        const bracketEnd = findBalancedSquareBracket(source, index)
+        if (bracketEnd === -1) continue
+
+        const content = source.slice(index + 1, bracketEnd)
+        if (!isFormulaLike(content)) continue
+
+        matchStart = index
+        open = '['
+        close = ']'
+        break
+      }
     }
 
     if (matchStart === -1) break
 
     const mathStart = matchStart + open.length
-    const matchEnd = findClosingDelimiter(source, mathStart, close)
+    const matchEnd = open === '['
+      ? findBalancedSquareBracket(source, matchStart)
+      : findClosingDelimiter(source, mathStart, close)
     if (matchEnd === -1) break
 
     const latex = source.slice(mathStart, matchEnd)
-    if (!latex.trim() || (open === '$' && /^\s|\s$/.test(latex))) {
+    if (!latex.trim() || (open === '$' && /^\s|\s$/.test(latex)) || (open === '[' && !isFormulaLike(latex))) {
       html += escapeHtml(source.slice(cursor, matchStart + open.length))
       cursor = matchStart + open.length
       continue
@@ -364,6 +407,20 @@ function mathInlineRule(state: StateInline, silent: boolean) {
 
     const content = src.slice(pos + 1, end)
     if (!content.trim() || /^\s|\s$/.test(content)) return false
+    if (!silent) {
+      const token = state.push('math_inline', 'math', 0)
+      token.content = normalizeLatexInput(content)
+    }
+    state.pos = end + 1
+    return true
+  }
+
+  if (src[pos] === '[' && !isEscaped(src, pos)) {
+    const end = findBalancedSquareBracket(src, pos)
+    if (end === -1) return false
+
+    const content = src.slice(pos + 1, end)
+    if (!isFormulaLike(content)) return false
     if (!silent) {
       const token = state.push('math_inline', 'math', 0)
       token.content = normalizeLatexInput(content)

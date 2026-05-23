@@ -43,4 +43,13 @@ describe('math markdown helpers', () => {
     expect(html).toContain('E[X] = \\sum x_i \\cdot P(x_i)')
     expect(html).toContain('不要改 **粗体**。')
   })
+
+  it('renders legacy square-bracket formula text only when it is formula-like', () => {
+    const html = renderTextWithMathHtml('[ 1-e^{-0.5} \\\\approx 39.3% ]')
+
+    expect(containsMathMarkdown('[ 1-e^{-0.5} \\\\approx 39.3% ]')).toBe(true)
+    expect(html).toContain('data-display-mode="false"')
+    expect(html).toContain('1-e^{-0.5} \\approx 39.3%')
+    expect(renderTextWithMathHtml('[普通说明]')).toBeNull()
+  })
 })
