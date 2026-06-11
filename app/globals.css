@@ -180,6 +180,11 @@ body {
   font-size: clamp(1.2rem, 2vw, 1.45rem);
 }
 
+:is(.novel-prose, .rich-content) h2,
+:is(.novel-prose, .rich-content) h3 {
+  scroll-margin-top: 5.25rem;
+}
+
 :is(.novel-prose, .rich-content) p,
 :is(.novel-prose, .rich-content) li {
   color: inherit;
@@ -881,6 +886,13 @@ body {
   max-width: 860px;
   padding-left: 40px;
   padding-right: 40px;
+}
+
+.article-page-main,
+[data-theme="refined"] .article-page-main,
+[data-theme="editorial"] .article-page-main,
+[data-theme="terminal"] .article-page-main {
+  max-width: none;
 }
 
 @media (max-width: 640px) {

@@ -50,6 +50,7 @@ interface InlineArticleEditorProps {
   publishedAt?: number    // unix timestamp
   viewCount?: number
   content?: string        // plain text, for reading time
+  contentContainerId?: string
   onExitReading?: () => void
 }
 
@@ -63,6 +64,7 @@ export function InlineArticleEditor({
   publishedAt,
   viewCount,
   content,
+  contentContainerId,
   onExitReading,
 }: InlineArticleEditorProps) {
   const editorRef = useRef<EditorInstance | null>(null)
@@ -349,6 +351,7 @@ export function InlineArticleEditor({
     (file) => void insertNonImageFile(file),
     'inline-main-prose',
   )
+  const editorContentContainerId = contentContainerId ?? `inline-post-content-${slug}`
 
   return (
     <>
@@ -514,34 +517,36 @@ export function InlineArticleEditor({
         )}
       </div>
 
-      <EditorRoot>
-        <EditorContent
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          extensions={imageExtensions as any}
-          className="editor-surface inline-editor"
-          immediatelyRender={false}
-          editorProps={editorProps}
-          onCreate={({ editor }) => {
-            editorRef.current = editor
-            const normalizedInitialHtml = normalizeMathHtmlForEditor(html)
-            originalHtmlRef.current = normalizedInitialHtml
-            editor.commands.setContent(normalizedInitialHtml)
+      <div id={editorContentContainerId}>
+        <EditorRoot>
+          <EditorContent
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const st = editor.storage as any
-            setCharCount(st.characterCount?.characters?.() ?? 0)
-          }}
-          onUpdate={({ editor }) => {
-            editorRef.current = editor
-            checkDirty(editor)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const st = editor.storage as any
-            setCharCount(st.characterCount?.characters?.() ?? 0)
-          }}
-        >
-          <FormattingBubble />
-          <SlashMenu />
-        </EditorContent>
-      </EditorRoot>
+            extensions={imageExtensions as any}
+            className="editor-surface inline-editor"
+            immediatelyRender={false}
+            editorProps={editorProps}
+            onCreate={({ editor }) => {
+              editorRef.current = editor
+              const normalizedInitialHtml = normalizeMathHtmlForEditor(html)
+              originalHtmlRef.current = normalizedInitialHtml
+              editor.commands.setContent(normalizedInitialHtml)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const st = editor.storage as any
+              setCharCount(st.characterCount?.characters?.() ?? 0)
+            }}
+            onUpdate={({ editor }) => {
+              editorRef.current = editor
+              checkDirty(editor)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const st = editor.storage as any
+              setCharCount(st.characterCount?.characters?.() ?? 0)
+            }}
+          >
+            <FormattingBubble />
+            <SlashMenu />
+          </EditorContent>
+        </EditorRoot>
+      </div>
 
       <InputModal
         open={inputModal.open}

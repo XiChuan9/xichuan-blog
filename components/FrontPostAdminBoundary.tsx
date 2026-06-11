@@ -14,6 +14,7 @@ interface FrontPostAdminBoundaryProps {
   publishedAt?: number
   viewCount?: number
   content?: string
+  contentContainerId?: string
   children: ReactNode
 }
 
@@ -27,6 +28,7 @@ export function FrontPostAdminBoundary({
   publishedAt,
   viewCount,
   content,
+  contentContainerId,
   children,
 }: FrontPostAdminBoundaryProps) {
   const { authenticated } = useAdminSession()
@@ -61,6 +63,7 @@ export function FrontPostAdminBoundary({
           publishedAt={publishedAt}
           viewCount={viewCount}
           content={content}
+          contentContainerId={contentContainerId}
           onExitReading={() => setEditing(false)}
         />
       </section>

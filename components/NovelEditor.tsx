@@ -37,6 +37,7 @@ import { CategorySelector } from '@/components/CategorySelector'
 import { ImageGenerationModal } from '@/components/ImageGenerationModal'
 import { ImageCropModal } from '@/components/ImageCropModal'
 import { WeChatPublishModal } from '@/components/WeChatPublishModal'
+import { ArticleToc } from '@/components/ArticleToc'
 import { useToast } from '@/components/Toast'
 import { startBackgroundTask } from '@/lib/client-background-task'
 import { AIModal } from '@/lib/ai-modal'
@@ -76,6 +77,7 @@ type PublishStatus = 'public' | 'draft' | 'encrypted' | 'unlisted'
 type SaveState = 'saved' | 'dirty' | 'saving' | 'error'
 
 const SIDEBAR_KEY = 'xichuan-blog:sidebar-open'
+const EDITOR_CONTENT_CONTAINER_ID = 'novel-editor-content'
 const AUTOSAVE_DEBOUNCE_MS = 1500
 const AUTOSAVE_MAX_RETRY_DELAY_MS = 10000
 const SITE_DISPLAY_URL = getSiteDisplayUrl()
@@ -128,6 +130,7 @@ export function NovelEditor({ initialData }: NovelEditorProps = {}) {
   const [draftReady, setDraftReady] = useState(false)
   const [initialContent, setInitialContent] = useState<JSONContent>(EMPTY_DOCUMENT)
   const editorRef = useRef<EditorInstance | null>(null)
+  const [tocEditor, setTocEditor] = useState<EditorInstance | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const fileUploadRef = useRef<HTMLInputElement | null>(null)
 
@@ -1167,6 +1170,13 @@ export function NovelEditor({ initialData }: NovelEditorProps = {}) {
 
       {/* ── Main layout: editor + sidebar ── */}
       <div className="flex">
+        <ArticleToc
+          contentContainerId={EDITOR_CONTENT_CONTAINER_ID}
+          defaultOpen
+          variant="editor"
+          editor={tocEditor}
+        />
+
         {/* Main editor area */}
         <main className="flex-1 min-w-0">
           <div className="mx-auto max-w-4xl px-4 pt-10 pb-8 sm:px-6">
@@ -1205,73 +1215,76 @@ export function NovelEditor({ initialData }: NovelEditorProps = {}) {
             </div>
 
             {/* Novel editor */}
-            {!draftReady ? (
-              <div className="editor-surface" />
-            ) : (
-              <EditorRoot>
-                <div>
-                  <EditorContent
-                    initialContent={initialContent}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    extensions={imageExtensions as any}
-                    className="editor-surface"
-                    immediatelyRender={false}
-                    editorProps={buildEditorProps(
-                      (file) => uploadImageAndGetUrl(file),
-                      (file) => void insertNonImageFile(file),
-                      'editor-main-prose',
-                    )}
-                    onCreate={({ editor }) => {
-                      editorRef.current = editor
+            <div id={EDITOR_CONTENT_CONTAINER_ID}>
+              {!draftReady ? (
+                <div className="editor-surface" />
+              ) : (
+                <EditorRoot>
+                  <div>
+                    <EditorContent
+                      initialContent={initialContent}
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const st = editor.storage as any
-                      setCharCount(st.characterCount?.characters?.() ?? 0)
-                      if (initialData?.html) {
-                        const normalizedInitialHtml = normalizeMathHtmlForEditor(initialData.html)
-                        skipNextEditorUpdateRef.current = true
-                        editor.commands.setContent(normalizedInitialHtml)
-                      } else {
-                        skipNextEditorUpdateRef.current = false
-                      }
-
-                      if (initialData?.slug) {
-                        lastAutosaveSnapshotRef.current = buildAutosaveSnapshot({
-                          currentSlug: initialData.slug,
-                          nextSlug: initialData.slug,
-                          title: initialData.title || '无标题',
-                          html: initialData.html || '',
-                          description: (initialData.description || '').trim(),
-                          category: initialData.category || '未分类',
-                          tags: initialData.tags || [],
-                          coverImage: initialData.cover_image || '',
-                        })
-                      } else {
-                        lastAutosaveSnapshotRef.current = null
-                      }
-                    }}
-                    onUpdate={({ editor }) => {
-                      editorRef.current = editor
-
-                      if (skipNextEditorUpdateRef.current) {
-                        skipNextEditorUpdateRef.current = false
+                      extensions={imageExtensions as any}
+                      className="editor-surface"
+                      immediatelyRender={false}
+                      editorProps={buildEditorProps(
+                        (file) => uploadImageAndGetUrl(file),
+                        (file) => void insertNonImageFile(file),
+                        'editor-main-prose',
+                      )}
+                      onCreate={({ editor }) => {
+                        editorRef.current = editor
+                        setTocEditor(editor)
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const st = editor.storage as any
                         setCharCount(st.characterCount?.characters?.() ?? 0)
-                        return
-                      }
+                        if (initialData?.html) {
+                          const normalizedInitialHtml = normalizeMathHtmlForEditor(initialData.html)
+                          skipNextEditorUpdateRef.current = true
+                          editor.commands.setContent(normalizedInitialHtml)
+                        } else {
+                          skipNextEditorUpdateRef.current = false
+                        }
 
-                      scheduleDraftSave(latestTitleRef.current, editor)
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const st = editor.storage as any
-                      setCharCount(st.characterCount?.characters?.() ?? 0)
-                    }}
-                  >
-                    <FormattingBubble />
-                    <SlashMenu />
-                  </EditorContent>
-                </div>
-              </EditorRoot>
-            )}
+                        if (initialData?.slug) {
+                          lastAutosaveSnapshotRef.current = buildAutosaveSnapshot({
+                            currentSlug: initialData.slug,
+                            nextSlug: initialData.slug,
+                            title: initialData.title || '无标题',
+                            html: initialData.html || '',
+                            description: (initialData.description || '').trim(),
+                            category: initialData.category || '未分类',
+                            tags: initialData.tags || [],
+                            coverImage: initialData.cover_image || '',
+                          })
+                        } else {
+                          lastAutosaveSnapshotRef.current = null
+                        }
+                      }}
+                      onUpdate={({ editor }) => {
+                        editorRef.current = editor
+
+                        if (skipNextEditorUpdateRef.current) {
+                          skipNextEditorUpdateRef.current = false
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const st = editor.storage as any
+                          setCharCount(st.characterCount?.characters?.() ?? 0)
+                          return
+                        }
+
+                        scheduleDraftSave(latestTitleRef.current, editor)
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const st = editor.storage as any
+                        setCharCount(st.characterCount?.characters?.() ?? 0)
+                      }}
+                    >
+                      <FormattingBubble />
+                      <SlashMenu />
+                    </EditorContent>
+                  </div>
+                </EditorRoot>
+              )}
+            </div>
           </div>
         </main>
 
